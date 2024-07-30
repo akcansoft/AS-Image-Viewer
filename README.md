@@ -32,11 +32,11 @@ This application uses the library file **gdip_all.ahk**
 
 ## Usage
 
-1. **Open Image**: Select the "Open" option from the right-click menu or press the `Right` arrow key to select an image file.
-2. **Navigation**: Use the right and left arrow keys to navigate between images.
+1. **Open Image**: Select the "Open" option from the right-click menu.
+2. **Navigation**: Use the `right` and `left` arrow keys to navigate between images.
 3. **Zoom In and Out**: Use the `+` and `-` keys on the Numpad to zoom in and out. Use the `Numpad0` key to reset to the original size.
 4. **Refresh**: Press the `F5` key to refresh the image.
-5. **Right-Click Menu**: Right-click to access the menu and use options like "Open", "Close", "Refresh", "Always On Top", and "About".
+5. **Right-Click Menu**: Right-click or `Down` arrow to access the menu and use options like "Open", "Close", "Refresh", "Always On Top", and "About".
 
 ## History
 - v1.0: 30/07/2024 First version
