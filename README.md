@@ -23,6 +23,13 @@ Download exe file to your Windows PC and run. No installation required.
 ## Source Code
 The source code for this program is available in the src folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
 
+This application uses the library file **gdip_all.ahk**
+
+### Gdip_All Library Source files:
+* https://github.com/tariqporter/Gdip original Gdip.ahk library
+* https://github.com/mmikeww/AHKv2-Gdip
+* https://github.com/buliasz/AHKv2-Gdip forked
+
 ## Usage
 
 1. **Open Image**: Select the "Open" option from the right-click menu or press the `Right` arrow key to select an image file.
