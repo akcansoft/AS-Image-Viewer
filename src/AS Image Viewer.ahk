@@ -1,86 +1,169 @@
-; AS Image Viewer v1.0
+; AS Image Viewer v1.1
 ; ====================
 ; This application is a minimalist image viewer that uses GDI+ for rendering,
 ; supports multiple image formats,
 ; and allows easy navigation and management through a simple GUI.
 
-; 30/07/2024
+; 11/08/2024
 ; Mesut Akcan
 ; makcan@gmail.com
 ; akcansoft.blogspot.com
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-
-;Rev: 12
+; R28
 
 #Requires AutoHotkey v2.0
-#SingleInstance Force
+#SingleInstance Off
 #NoTrayIcon
-
-; Load the GDI+ library
-#Include "gdip_all.ahk"
+#Include "gdip_all.ahk" ; Load the GDI+ library
 
 ; Start GDI+
 if !pToken := Gdip_Startup() {
-  MsgBox "Failed to start GDI+."
+  MsgBox "Failed to start GDI+"
   ExitApp()
 }
-bitmap := 0
-zoomFactor := 1
-myGui := Gui("-Caption -Border +AlwaysOnTop")
 
-; Create right-click menu
-rcMenu := Menu()
-rcMenu.Add("&Open", MenuOpenFile)
-rcMenu.SetIcon("&Open", A_WinDir "\system32\imageres.dll", 195)
-rcMenu.Add("&Close", GuiClose)
-rcMenu.SetIcon("&Close", A_WinDir "\system32\imageres.dll", 94)
-rcMenu.Add("&Refresh", ShowImage)
-rcMenu.SetIcon("&Refresh", A_WinDir "\system32\shell32.dll", 147)
-rcMenu.Add("Allways On &Top", toggleAOT)
-rcMenu.Check("Allways On &Top")
-rcMenu.Add()
-rcMenu.Add("&About", About)
-rcMenu.SetIcon("&About", A_WinDir "\system32\shell32.dll", 155)
+bitmap := 0
+scrAspectRatio := A_ScreenWidth / A_ScreenHeight
+DblClickTime := DllCall("GetDoubleClickTime", "UInt")
+
+;Create Gui
+g := Gui("+OwnDialogs -Caption -Border +AlwaysOnTop -DPIScale")
 
 ; GUI events
-myGui.OnEvent("Close", GuiClose)
-myGui.OnEvent("Size", GuiSize)
+g.OnEvent("Close", GuiClose)
+g.OnEvent("Size", GuiSize)
 
-MenuOpenFile() ; openfile & loadimage
+; Right click menu items
+mnu := Map()
+mnu["open"] := "&Open`tCtrl+O"
+mnu["exit"] := "&Exit`tAlt+F4"
+mnu["first"] := "First I&mage`tHome"
+mnu["prev"] := "&Previous Image`tLeft"
+mnu["next"] := "&Next Image`tRight"
+mnu["last"] := "Last Ima&ge`tEnd"
+mnu["zoomin"] := "Zoom &In(+10%)`tNumpad +"
+mnu["zoomout"] := "Zoom O&ut(-10%)`tNumpad -"
+mnu["fit"] := "&Fit to Screen`tNumpad 1"
+mnu["osize"] := "Original &Size(100%)`tNumpad 0"
+mnu["refresh"] := "&Refresh`tF5"
+mnu["fileinfo"] := "File Info`tF1"
+mnu["fileprop"] := "Fi&le Properties`tF2"
+mnu["fileinfolder"] := "S&how File In Folder`tF3"
+mnu["aot"] := "Always On &Top"
+mnu["border"] := "&Window Border"
+mnu["shortcuts"] := "Short&cuts"
+mnu["about"] := "&About"
 
-#HotIf WinActive(myGui.Hwnd)
-Right:: LoadNextImage() ; Right arrow key
+; Create right-click menu
+imageres := A_WinDir "\system32\imageres.dll"
+shell32 := A_WinDir "\system32\shell32.dll"
+rcMenu := Menu()
+rcMenu.Add(mnu["open"], menuHandler)
+rcMenu.SetIcon(mnu["open"], imageres, 195)
+rcMenu.Add(mnu["exit"], menuHandler)
+rcMenu.SetIcon(mnu["exit"], imageres, 94)
+rcMenu.Add()
+rcMenu.Add(mnu["first"], menuHandler)
+rcMenu.Add(mnu["prev"], menuHandler)
+rcMenu.Add(mnu["next"], menuHandler)
+rcMenu.Add(mnu["last"], menuHandler)
+rcMenu.Add()
+rcMenu.Add(mnu["zoomin"], menuHandler)
+rcMenu.Add(mnu["zoomout"], menuHandler)
+rcMenu.Add(mnu["fit"], menuHandler)
+rcMenu.Add(mnu["osize"], menuHandler)
+rcMenu.Add()
+rcMenu.Add(mnu["refresh"], menuHandler)
+rcMenu.SetIcon(mnu["refresh"], shell32, 147)
+rcMenu.Add()
+rcMenu.Add(mnu["fileinfo"], menuHandler)
+rcMenu.SetIcon(mnu["fileinfo"], shell32, 222)
+rcMenu.Add(mnu["fileprop"], menuHandler)
+rcMenu.Add(mnu["fileinfolder"], menuHandler)
+rcMenu.Add()
+rcMenu.Add(mnu["aot"], menuHandler)
+rcMenu.Check(mnu["aot"])
+rcMenu.Add(mnu["border"], menuHandler)
+rcMenu.Add()
+rcMenu.Add(mnu["shortcuts"], menuHandler)
+rcMenu.Add(mnu["about"], menuHandler)
+rcMenu.SetIcon(mnu["about"], shell32, 155)
+
+OpenFile() ; openfile & loadimage
+
+#HotIf WinActive(g.Hwnd)
+Home:: LoadFirstImage()
+Browser_Back::
 Left:: LoadPrevImage()  ; Left arrow key
+Browser_Forward::
+Right:: LoadNextImage() ; Right arrow key
+End:: LoadLastImage()
 NumpadAdd:: ZoomImage(1)  ; Numpad + key
-NumpadSub:: ZoomImage(-1)  ; Numpad - key
-Numpad0:: ZoomImage(0)  ; Numpad 0 key
-F5:: ShowImage() ; F5 key
+NumpadSub:: ZoomImage(-1) ; Numpad - key
+Numpad0:: ZoomImage(0)    ; Numpad 0 key. Original size
+Numpad1:: ZoomImage(2)    ; Numpad 2 key. Fit to screen
 
-#HotIf mouseIsOver(myGui.hwnd)
-Down::
+F1:: FileInfo()
+F2:: FileProperties()
+F3:: ShowFileInFolder()
+F5:: ShowImage() ; Refresh
+^o:: OpenFile() ; Ctrl+o
+Esc:: ToolTip()
+
+#HotIf mouseIsOver(g.Hwnd)
+Down:: ; Down arrow key
 RButton:: rcMenu.Show() ; right-click
+WheelUp:: ZoomImage(1) ; mouse wheel up
+WheelDown:: ZoomImage(-1) ; mouse wheel down
+XButton1:: LoadPrevImage() ; 4th mouse button
+XButton2:: LoadNextImage() ; 5th mouse button
+~LButton::
+~MButton::
+{
+  if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime)
+  {
+    if (A_ThisHotkey = "~LButton")
+      ZoomImage(0) ; Original size
+    else if (A_ThisHotkey = "~MButton")
+      ZoomImage(2) ; Fit to screen
+  }
+}
 #HotIf
 
-; Mouse drag function
-OnMessage(0x84, WM_NCHITTEST)
+OnMessage(0x84, WM_NCHITTEST) ; Mouse drag function
+OnMessage(0x0232, WM_EXITSIZEMOVE)
 WM_NCHITTEST(wParam, lParam, msg, hwnd) {
   static HTCAPTION := 2
-  if (hwnd = myGui.Hwnd)
+  if (hwnd = g.Hwnd)
     return HTCAPTION
 }
-
-MenuOpenFile(*) {
-  OpenFile(), LoadImage()
+WM_EXITSIZEMOVE(wParam, lParam, msg, hwnd) {
+  ShowImage()
 }
 
-; Toggle Allways On Top
-toggleAOT(*) {
-  static guiAOT := true
-  rcMenu.ToggleCheck("Allways On &Top")
-  guiAOT := !guiAOT
-  myGui.Opt(guiAOT ? "+AlwaysOnTop" : "-AlwaysOnTop")
+menuHandler(Item, *) {
+  switch Item {
+    case mnu["open"]: OpenFile()
+    case mnu["exit"]: GuiClose()
+    case mnu["first"]: LoadFirstImage()
+    case mnu["prev"]: LoadPrevImage()
+    case mnu["next"]: LoadNextImage()
+    case mnu["last"]: LoadLastImage()
+    case mnu["zoomin"]: ZoomImage(1)
+    case mnu["zoomout"]: ZoomImage(-1)
+    case mnu["fit"]: ZoomImage(2)
+    case mnu["osize"]: ZoomImage(0)
+    case mnu["refresh"]: ShowImage()
+    case mnu["fileinfo"]: FileInfo()
+    case mnu["fileprop"]: FileProperties()
+    case mnu["fileinfolder"]: ShowFileInFolder()
+    case mnu["aot"]: toggleAOT()
+    case mnu["border"]: toggleBorder()
+    case mnu["shortcuts"]: Shortcuts()
+    case mnu["about"]: About()
+  }
 }
 
 OpenFile() {
@@ -88,15 +171,15 @@ OpenFile() {
   local folder, extensions
   ; Select image file
   extensions := "*.jpg; *.jpeg; *.png; *.gif; *.bmp; *.tif; *.ico; *.webp; *.wmf"
+  g.Opt("+OwnDialogs")
   imgFile := FileSelect(, , "Select image file:", "Images (" extensions ")")
   if !imgFile {
-    MsgBox "No file selected.", , "T3 Owner" myGui.Hwnd
+    MsgBox "No file selected.", , "T3 Owner" g.Hwnd
     if !bitmap
       ExitApp()
     return
   }
 
-  ; Get the folder name of the image file
   SplitPath imgFile, , &folder
   imageFiles := []
   Loop Files, folder "\*.*" {
@@ -106,54 +189,26 @@ OpenFile() {
       imageFiles.Push(A_LoopFileFullPath)
   }
   imgNo := getArrayValueIndex(imgFile)
-}
-
-; Show the image on the GUI
-ShowImage(*) {
-  global imgWidth, imgHeight, myGui
-  hDC := DllCall("GetDC", "Ptr", myGui.Hwnd, "Ptr")
-  G := Gdip_GraphicsFromHDC(hDC)
-  ;Gdip_GraphicsClear(G, 0xFFF0F0F0)
-  Gdip_DrawImage(G, bitmap, 0, 0, imgWidth, imgHeight)
-  Gdip_DeleteGraphics(G)
-  DllCall("ReleaseDC", "Ptr", myGui.Hwnd, "Ptr", hDC)
-}
-
-; Load the next image
-LoadNextImage(*) {
-  global
-  imgNo := (imgNo >= imageFiles.Length) ? 1 : imgNo + 1
-  LoadImage()
-}
-
-; Load the previous image
-LoadPrevImage(*) {
-  global
-  imgNo := (imgNo <= 1) ? imageFiles.Length : imgNo - 1
   LoadImage()
 }
 
 ; Image loading function
 LoadImage() {
-  global imgFile, imgWidth, imgHeight, bitmap, originalWidth, originalHeight, zoomFactor
+  global
   imgFile := imageFiles[imgNo]
   bitmap := Gdip_CreateBitmapFromFile(imgFile)
   if !bitmap {
-    MsgBox "Failed to load image file: " imgFile, "Owner" myGui.Hwnd
+    MsgBox "Failed to load image file: " imgFile, "Owner" g.Hwnd
     return
   }
 
-  ; Get the image dimensions
+  ; Get image dimensions
   originalWidth := Gdip_GetImageWidth(bitmap)
   originalHeight := Gdip_GetImageHeight(bitmap)
 
-  ; Adjust image dimensions to fit screen
-  scrWidth := SysGet(78)
-  scrHeight := SysGet(79)
-  if (originalWidth > scrWidth or originalHeight > scrHeight) {
-    zoomFactor := Min(scrWidth / originalWidth, scrHeight / originalHeight)
-    imgWidth := Round(originalWidth * zoomFactor)
-    imgHeight := Round(originalHeight * zoomFactor)
+  if (originalWidth > A_ScreenWidth or originalHeight > A_ScreenHeight) {
+    ZoomImage(2) ; Fit
+    return
   }
   else {
     imgWidth := originalWidth
@@ -161,40 +216,96 @@ LoadImage() {
     zoomFactor := 1
   }
   ShowGui()
-  ShowImage()
+}
+
+; Load the first image
+LoadFirstImage(*) {
+  global imgNo := 1
+  LoadImage()
+}
+
+; Load the first image
+LoadLastImage(*) {
+  global imgNo := imageFiles.Length
+  LoadImage()
+}
+
+; Load the next image
+LoadNextImage(*) {
+  global imgNo := (imgNo >= imageFiles.Length) ? 1 : imgNo + 1
+  LoadImage()
+}
+
+; Load the previous image
+LoadPrevImage(*) {
+  global imgNo := (imgNo <= 1) ? imageFiles.Length : imgNo - 1
+  LoadImage()
+}
+
+; Show the image on the GUI
+ShowImage(*) {
+  global imgWidth, imgHeight, g
+  ToolTip() ; Close tooltip
+  hDC := DllCall("GetDC", "Ptr", g.Hwnd, "Ptr")
+  GG := Gdip_GraphicsFromHDC(hDC)
+  ;Gdip_GraphicsClear(GG, 0xFFF0F0F0)
+  Gdip_DrawImage(GG, bitmap, 0, 0, imgWidth, imgHeight)
+  Gdip_DeleteGraphics(GG)
+  DllCall("ReleaseDC", "Ptr", g.Hwnd, "Ptr", hDC)
 }
 
 ; Zoom image function
 ZoomImage(a) {
-  global imgWidth, imgHeight, originalWidth, originalHeight, zoomFactor
-  if a = 0
-    zoomFactor := 1
-  else {
-    prevZoomFactor := zoomFactor
-    zoomFactor := zoomFactor + (a / 10)
+  global
+  local newWidth, newHeight
+  switch a {
+    case 0: ; Original size
+      zoomFactor := 1
+    case 1, -1: ; Zoom in/out
+      if a = -1
+        local prevZoomFactor := zoomFactor
+      zoomFactor := zoomFactor + (a / 10)
+    case 2: ; Fit to screen
+      ; Adjust image dimensions to fit screen
+      local imgAspectRatio := originalWidth / originalHeight
+      if (imgAspectRatio > scrAspectRatio) {
+        newWidth := A_ScreenWidth
+        newHeight := Round(A_ScreenWidth / imgAspectRatio)
+      } else {
+        newHeight := A_ScreenHeight
+        newWidth := Round(A_ScreenHeight * imgAspectRatio)
+      }
+      zoomFactor := newWidth / originalWidth
   }
-
   newWidth := Round(originalWidth * zoomFactor)
   newHeight := Round(originalHeight * zoomFactor)
-
   if (a = -1) and (newWidth < 10 or newHeight < 10) {
     zoomFactor := prevZoomFactor
     return
   }
-
   imgWidth := newWidth
   imgHeight := newHeight
-
-  ; myGui.Show("w0")
-  ; myGui.Show("w" imgWidth " h" imgHeight "Center")
   ShowGui()
-  ShowImage()
+}
+
+; Toggle Allways On Top
+toggleAOT(*) {
+  static guiAOT := true
+  rcMenu.ToggleCheck(mnu["aot"])
+  g.Opt(((guiAOT := !guiAOT) ? "+" : "-") . "AlwaysOnTop")
+}
+
+; Toggle Window Border
+toggleBorder(*) {
+  static guiBorder := false
+  rcMenu.ToggleCheck(mnu["border"])
+  g.Opt(((guiBorder := !guiBorder) ? "+" : "-") . "Border")
+  g.Show()
 }
 
 ShowGui() {
-  global
-  myGui.Show("w0")
-  myGui.Show("w" imgWidth " h" imgHeight "Center")
+  g.Show("w0")
+  g.Show("w" imgWidth " h" imgHeight " xCenter yCenter")
 }
 
 ; Function to get the index of a value in the imageFiles array
@@ -219,7 +330,7 @@ GuiSize(gui, minMax, width, height) {
   }
 }
 
-; Clean up GDI+ resources when myGui is closed
+; Clean up GDI+ resources when Gui is closed
 GuiClose(*) {
   global
   Gdip_DisposeImage(bitmap)
@@ -227,10 +338,93 @@ GuiClose(*) {
   ExitApp()
 }
 
+ShowFileInFolder() {
+  Run('explorer.exe /select,"' imgFile '"')
+  Sleep(1000)
+  WinWait("ahk_class CabinetWClass")
+  WinSetAlwaysOnTop(, "A")
+}
+
+; Image file info
+FileInfo() {
+  SplitPath(imgFile, &file, &dir)
+  mfd := FileDT("M") ; Modification
+  cfd := FileDT("C") ; Creation
+  afd := FileDT("A") ; Last Access
+  fsize := FileGetSize(imgFile)
+  fs := FormatByteSize(fsize) " (" RegExReplace(fsize, "(\d)(?=(\d{3})+(?!\d))", "$1.") " bytes)"
+  m := "Folder: " dir "`n"
+  m .= "File: " file "`n"
+  m .= "Modification time: " mfd "`n"
+  m .= "Creation time: " cfd "`n"
+  m .= "Last Access: " afd "`n"
+  m .= "Original Size: " originalWidth "x" originalHeight "`n"
+  m .= "Display Size: " imgWidth "x" imgHeight "`n"
+  m .= "File Size: " fs
+  ToolTip(m, 5, 5)
+}
+
+; Formatted File Date & Time
+FileDT(opt) {
+  return FormatTime(FileGetTime(imgFile, opt), "d MMMM yyyy ddd HH:mm:ss")
+}
+
+FileProperties() {
+  Run('Properties "' imgFile '"')
+  WinWait("ahk_class #32770")
+  WinSetAlwaysOnTop(, "A")
+}
+
+; Converts a numeric value into a string that represents
+; the number in bytes, kilobytes, megabytes, or gigabytes,
+; depending on the size.
+FormatByteSize(int, flags := 0x2) {
+  size := VarSetStrCapacity(&buf, 0x0104)
+  DllCall("shlwapi\StrFormatByteSizeEx", "int64", int, "int", flags, "str", buf, "uint", size)
+  return buf
+}
+
+Shortcuts(*) {
+  MsgBox("
+(
+Keyboard Shortcuts:
+-------------------
+Down Arrow : Menu
+Home: First Image
+Browser Back: Previous image
+Left Arrow: Previous image
+Browser Forward: Next image
+Right Arrow: Next image
+End: Last Image
+Numpad + : Zoom in
+Numpad - : Zoom out
+Numpad 0 : Original size
+Numpad 1 : Fit to screen
+
+F1 : Image file info
+F2: File properties
+F3: Show file in folder
+F5 : Refresh
+Ctrl+O: Open image file
+Esc: Close file info
+Alt+F4: Exit App
+
+Mouse:
+------
+Right click : Menu
+Mouse wheel up: Zoom in
+Mouse wheel down: Zoom out
+4. mouse button: Previous image
+5. mouse button: Next image
+Left button double click: Original size
+Middle button double click: Fit to screen
+)", "Shortcuts", "Owner" g.Hwnd)
+}
+
 About(*) {
   MsgBox("
 (
-AS Image Viewer v1.0
+AS Image Viewer v1.1
 ©2024
 Mesut Akcan
 makcan@gmail.com
@@ -239,5 +433,5 @@ akcansoft.blogspot.com
 mesutakcan.blogspot.com
 github.com/akcansoft
 youtube.com/mesutakcan
-)", "About", "Owner" myGui.Hwnd)
+)", "About", "Owner" g.Hwnd)
 }
