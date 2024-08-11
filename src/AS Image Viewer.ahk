@@ -11,7 +11,7 @@
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-; R28
+; R29
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
@@ -20,7 +20,7 @@
 
 ; Start GDI+
 if !pToken := Gdip_Startup() {
-  MsgBox "Failed to start GDI+"
+  MsgBox "Failed to start GDI+", "Error", "Icon!" 
   ExitApp()
 }
 
