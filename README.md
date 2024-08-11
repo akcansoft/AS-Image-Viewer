@@ -2,6 +2,8 @@
 
 AS Image Viewer is a minimalist image viewer application. This application uses GDI+ for rendering images and supports multiple image formats. It allows for easy navigation and management through a simple GUI.
 
+![Screenshot v1.1](https://github.com/akcansoft/AS-Image-Viewer/blob/main/src/ss-v1.1.jpg "Screenshot v1.1")
+
 ## Features
 
 - Renders images using GDI+
