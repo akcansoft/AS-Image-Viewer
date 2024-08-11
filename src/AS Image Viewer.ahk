@@ -20,7 +20,7 @@
 
 ; Start GDI+
 if !pToken := Gdip_Startup() {
-  MsgBox "Failed to start GDI+", "Error", "Icon!" 
+  MsgBox("Failed to start GDI+", , "Icon! 4096")
   ExitApp()
 }
 
@@ -174,7 +174,7 @@ OpenFile() {
   g.Opt("+OwnDialogs")
   imgFile := FileSelect(, , "Select image file:", "Images (" extensions ")")
   if !imgFile {
-    MsgBox "No file selected.", , "T3 Owner" g.Hwnd
+    MsgBox("No file selected.", , "Icon! 4096")
     if !bitmap
       ExitApp()
     return
@@ -198,7 +198,7 @@ LoadImage() {
   imgFile := imageFiles[imgNo]
   bitmap := Gdip_CreateBitmapFromFile(imgFile)
   if !bitmap {
-    MsgBox "Failed to load image file: " imgFile, "Owner" g.Hwnd
+    MsgBox "Failed to load image file: " imgFile, , "Icon! 4096"
     return
   }
 
