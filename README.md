@@ -25,12 +25,7 @@ Download exe file to your Windows PC and run. No installation required.
 ## Source Code
 The source code for this program is available in the src folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
 
-This application uses the library file **gdip_all.ahk**
-
-### Gdip_All Library Source files:
-* https://github.com/tariqporter/Gdip original Gdip.ahk library
-* https://github.com/mmikeww/AHKv2-Gdip
-* https://github.com/buliasz/AHKv2-Gdip forked
+This application uses the library file [Gdip_All.ahk](https://github.com/buliasz/AHKv2-Gdip/blob/master/Gdip_All.ahk)
 
 ## Usage
 
@@ -43,55 +38,32 @@ This application uses the library file **gdip_all.ahk**
 
 ## Shortcuts
 ### Keyboard Shortcuts:
-`Down Arrow` : Menu
-
-`Home`: First Image
-
-`Browser Back`: Previous image
-
-`Left Arrow`: Previous image
-
-`Browser Forward`: Next image
-
-`Right Arrow` : Next image
-
-`End` : Last Image
-
-`Numpad +` : Zoom in
-
-`Numpad -` : Zoom out
-
-`Numpad 0` : Original size
-
-`Numpad 1` : Fit to screen
-
-`F1` : Image file info
-
-`F2` : File properties
-
-`F3` : Show file in folder
-
-`F5` : Refresh
-
-`Ctrl+O` : Open image file
-
-`Esc` : Close file info
-
+`Down Arrow` : Menu\
+`Home`: First Image\
+`Browser Back`: Previous image\
+`Left Arrow`: Previous image\
+`Browser Forward`: Next image\
+`Right Arrow` : Next image\
+`End` : Last Image\
+`Numpad +` : Zoom in\
+`Numpad -` : Zoom out\
+`Numpad 0` : Original size\
+`Numpad 1` : Fit to screen\
+`F1` : Image file info\
+`F2` : File properties\
+`F3` : Show file in folder\
+`F5` : Refresh\
+`Ctrl+O` : Open image file\
+`Esc` : Close file info\
 `Alt+F4` : Exit App
 
 ### Mouse:
-**Right click** : Menu
-
-**Mouse wheel up**: Zoom in
-
-**Mouse wheel down**: Zoom out
-
-**4. mouse button**: Previous image
-
-**5. mouse button**: Next image
-
-**Left button double click**: Original size
-
+**Right click** : Menu\
+**Mouse wheel up**: Zoom in\
+**Mouse wheel down**: Zoom out\
+**4. mouse button**: Previous image\
+**5. mouse button**: Next image\
+**Left button double click**: Original size\
 **Middle button double click**: Fit to screen
 
 ## History
