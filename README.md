@@ -32,14 +32,72 @@ This application uses the library file **gdip_all.ahk**
 
 ## Usage
 
-1. **Open Image**: Select the "Open" option from the right-click menu.
-2. **Navigation**: Use the `right` and `left` arrow keys to navigate between images.
-3. **Zoom In and Out**: Use the `+` and `-` keys on the Numpad to zoom in and out. Use the `Numpad0` key to reset to the original size.
-4. **Refresh**: Press the `F5` key to refresh the image.
-5. **Right-Click Menu**: Right-click or `Down` arrow to access the menu and use options like "Open", "Close", "Refresh", "Always On Top", and "About".
+1. **Right-Click Menu**: Right-click or `Down` arrow to access the menu and use options
+2. **Open Image**: Select the "Open" option from the right-click menu.
+3. **Navigation**: Navigation by keyboard shortcuts or menu
+5. **Zoom In and Out**: Use the `+` and `-` keys on the Numpad to zoom in and out.
+6. Use the `Numpad0` key to reset to the original size, Use the `Numpad1` key to fit to screen
+7. **Refresh**: Press the `F5` key to refresh the image. 
+
+## Shortcuts
+### Keyboard Shortcuts:
+`Down Arrow` : Menu
+
+`Home`: First Image
+
+`Browser Back`: Previous image
+
+`Left Arrow`: Previous image
+
+`Browser Forward`: Next image
+
+`Right Arrow` : Next image
+
+`End` : Last Image
+
+`Numpad +` : Zoom in
+
+`Numpad -` : Zoom out
+
+`Numpad 0` : Original size
+
+`Numpad 1` : Fit to screen
+
+`F1` : Image file info
+
+`F2` : File properties
+
+`F3` : Show file in folder
+
+`F5` : Refresh
+
+`Ctrl+O` : Open image file
+
+`Esc` : Close file info
+
+`Alt+F4` : Exit App
+
+### Mouse:
+**Right click** : Menu
+
+**Mouse wheel up**: Zoom in
+
+**Mouse wheel down**: Zoom out
+
+**4. mouse button**: Previous image
+
+**5. mouse button**: Next image
+
+**Left button double click**: Original size
+
+**Middle button double click**: Fit to screen
 
 ## History
 - v1.0: 30/07/2024 First version
+- v1.1: 11/08/2024
+  - Code improvements
+  - Added new shortcuts for navigation
+  - Zoom features have been improved
 
 ## Contact
 
