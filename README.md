@@ -72,6 +72,8 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Code improvements
   - Added new shortcuts for navigation
   - Zoom features have been improved
+- v1.2: 18/08/2024
+  - Code improvements
 
 ## Contact
 
