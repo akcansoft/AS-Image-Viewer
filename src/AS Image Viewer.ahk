@@ -1,17 +1,17 @@
-; AS Image Viewer v1.1
+; AS Image Viewer v1.2
 ; ====================
 ; This application is a minimalist image viewer that uses GDI+ for rendering,
 ; supports multiple image formats,
 ; and allows easy navigation and management through a simple GUI.
 
-; 11/08/2024
+; 18/08/2024
 ; Mesut Akcan
 ; makcan@gmail.com
 ; akcansoft.blogspot.com
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-; R29
+; R32
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
@@ -119,29 +119,19 @@ WheelUp:: ZoomImage(1) ; mouse wheel up
 WheelDown:: ZoomImage(-1) ; mouse wheel down
 XButton1:: LoadPrevImage() ; 4th mouse button
 XButton2:: LoadNextImage() ; 5th mouse button
-~LButton::
 ~MButton::
 {
   if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime)
-  {
-    if (A_ThisHotkey = "~LButton")
-      ZoomImage(0) ; Original size
-    else if (A_ThisHotkey = "~MButton")
-      ZoomImage(2) ; Fit to screen
-  }
+    ZoomImage(2) ; Fit to screen
+}
+~LButton::
+{
+  if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime)
+    ZoomImage(0) ; Original size
+  else
+    MoveWindow()
 }
 #HotIf
-
-OnMessage(0x84, WM_NCHITTEST) ; Mouse drag function
-OnMessage(0x0232, WM_EXITSIZEMOVE)
-WM_NCHITTEST(wParam, lParam, msg, hwnd) {
-  static HTCAPTION := 2
-  if (hwnd = g.Hwnd)
-    return HTCAPTION
-}
-WM_EXITSIZEMOVE(wParam, lParam, msg, hwnd) {
-  ShowImage()
-}
 
 menuHandler(Item, *) {
   switch Item {
@@ -290,22 +280,24 @@ ZoomImage(a) {
 
 ; Toggle Allways On Top
 toggleAOT(*) {
-  static guiAOT := true
   rcMenu.ToggleCheck(mnu["aot"])
-  g.Opt(((guiAOT := !guiAOT) ? "+" : "-") . "AlwaysOnTop")
+  WinSetAlwaysOnTop(-1, g) ; toggle aot
 }
 
 ; Toggle Window Border
 toggleBorder(*) {
-  static guiBorder := false
   rcMenu.ToggleCheck(mnu["border"])
-  g.Opt(((guiBorder := !guiBorder) ? "+" : "-") . "Border")
+  WinSetStyle("^0x800000", g) ; toggle border
   g.Show()
 }
 
 ShowGui() {
   g.Show("w0")
-  g.Show("w" imgWidth " h" imgHeight " xCenter yCenter")
+  s := "w" imgWidth " h" imgHeight
+  if imgWidth > A_ScreenWidth || imgHeight > A_ScreenHeight
+    g.Show(s)
+  else
+    g.Show(s " Center")
 }
 
 ; Function to get the index of a value in the imageFiles array
@@ -361,7 +353,11 @@ FileInfo() {
   m .= "Original Size: " originalWidth "x" originalHeight "`n"
   m .= "Display Size: " imgWidth "x" imgHeight "`n"
   m .= "File Size: " fs
-  ToolTip(m, 5, 5)
+  CoordMode("ToolTip","Screen")
+  WinGetPos(&x,&y,,,g)
+  tX := Max(0,x) ; Tooltip x pos
+  tY := Max(0,y) ; Tooltip y pos
+  ToolTip(m, tX+5, tY+5)
 }
 
 ; Formatted File Date & Time
@@ -382,6 +378,31 @@ FormatByteSize(int, flags := 0x2) {
   size := VarSetStrCapacity(&buf, 0x0104)
   DllCall("shlwapi\StrFormatByteSizeEx", "int64", int, "int", flags, "str", buf, "uint", size)
   return buf
+}
+
+MoveWindow() {
+  CoordMode("Mouse")  ; Switch to screen/absolute coordinates.
+  MouseGetPos &msX, &msY, &win
+  WinGetPos(&oX, &oY, , , win)
+  if !WinGetMinMax(win)  ; Only if the window isn't maximized
+    SetTimer(WatchMouse, 10) ; Track the mouse as the user drags it.
+
+  WatchMouse() {
+    if !GetKeyState("LButton", "P") {  ; Button has been released, so drag is complete.
+      SetTimer(, 0)
+      ShowImage()
+      return
+    }
+    ; Otherwise, reposition the window to match the change in mouse coordinates
+    ; caused by the user having dragged the mouse:
+    CoordMode("Mouse")
+    MouseGetPos(&mX, &mY)
+    WinGetPos(&wX, &wY, , , win)
+    SetWinDelay(-1)   ; Makes the below move faster/smoother.
+    WinMove(wX + mX - msX, wY + mY - msY, , , win)
+    msX := mX  ; Update for the next timer-call to this subroutine.
+    msY := mY
+  }
 }
 
 Shortcuts(*) {
@@ -424,7 +445,7 @@ Middle button double click: Fit to screen
 About(*) {
   MsgBox("
 (
-AS Image Viewer v1.1
+AS Image Viewer v1.2
 ©2024
 Mesut Akcan
 makcan@gmail.com
