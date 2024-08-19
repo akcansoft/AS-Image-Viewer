@@ -1,17 +1,17 @@
-; AS Image Viewer v1.2
-; ====================
+; AS Image Viewer v1.2.1
+; ======================
 ; This application is a minimalist image viewer that uses GDI+ for rendering,
 ; supports multiple image formats,
 ; and allows easy navigation and management through a simple GUI.
 
-; 18/08/2024
+; 19/08/2024
 ; Mesut Akcan
 ; makcan@gmail.com
 ; akcansoft.blogspot.com
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-; R32
+; R33
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
@@ -36,60 +36,57 @@ g.OnEvent("Close", GuiClose)
 g.OnEvent("Size", GuiSize)
 
 ; Right click menu items
-mnu := Map()
-mnu["open"] := "&Open`tCtrl+O"
-mnu["exit"] := "&Exit`tAlt+F4"
-mnu["first"] := "First I&mage`tHome"
-mnu["prev"] := "&Previous Image`tLeft"
-mnu["next"] := "&Next Image`tRight"
-mnu["last"] := "Last Ima&ge`tEnd"
-mnu["zoomin"] := "Zoom &In(+10%)`tNumpad +"
-mnu["zoomout"] := "Zoom O&ut(-10%)`tNumpad -"
-mnu["fit"] := "&Fit to Screen`tNumpad 1"
-mnu["osize"] := "Original &Size(100%)`tNumpad 0"
-mnu["refresh"] := "&Refresh`tF5"
-mnu["fileinfo"] := "File Info`tF1"
-mnu["fileprop"] := "Fi&le Properties`tF2"
-mnu["fileinfolder"] := "S&how File In Folder`tF3"
-mnu["aot"] := "Always On &Top"
-mnu["border"] := "&Window Border"
-mnu["shortcuts"] := "Short&cuts"
-mnu["about"] := "&About"
+mnu := {
+  open: "&Open`tCtrl+O",
+  exit: "&Exit`tAlt+F4",
+  first: "First I&mage`tHome",
+  prev: "&Previous Image`tLeft",
+  next: "&Next Image`tRight",
+  last: "Last Ima&ge`tEnd",
+  zoomin: "Zoom &In(+10%)`tNumpad +",
+  zoomout: "Zoom O&ut(-10%)`tNumpad -",
+  fit: "&Fit to Screen`tNumpad 1",
+  osize: "Original &Size(100%)`tNumpad 0",
+  refresh: "&Refresh`tF5",
+  fileinfo: "File Info`tF1",
+  fileprop: "Fi&le Properties`tF2",
+  fileinfolder: "S&how File In Folder`tF3",
+  aot: "Always On &Top",
+  border: "&Window Border",
+  shortcuts: "Short&cuts",
+  about: "&About"
+}
 
 ; Create right-click menu
 imageres := A_WinDir "\system32\imageres.dll"
 shell32 := A_WinDir "\system32\shell32.dll"
 rcMenu := Menu()
-rcMenu.Add(mnu["open"], menuHandler)
-rcMenu.SetIcon(mnu["open"], imageres, 195)
-rcMenu.Add(mnu["exit"], menuHandler)
-rcMenu.SetIcon(mnu["exit"], imageres, 94)
+CreateRcMenu(mnu.open, imageres, 195)
+CreateRcMenu(mnu.exit, imageres, 94)
 rcMenu.Add()
-rcMenu.Add(mnu["first"], menuHandler)
-rcMenu.Add(mnu["prev"], menuHandler)
-rcMenu.Add(mnu["next"], menuHandler)
-rcMenu.Add(mnu["last"], menuHandler)
+CreateRcMenu(mnu.first)
+CreateRcMenu(mnu.prev)
+CreateRcMenu(mnu.next)
+CreateRcMenu(mnu.last)
 rcMenu.Add()
-rcMenu.Add(mnu["zoomin"], menuHandler)
-rcMenu.Add(mnu["zoomout"], menuHandler)
-rcMenu.Add(mnu["fit"], menuHandler)
-rcMenu.Add(mnu["osize"], menuHandler)
+CreateRcMenu(mnu.zoomin)
+CreateRcMenu(mnu.zoomout)
+CreateRcMenu(mnu.fit)
+CreateRcMenu(mnu.osize)
 rcMenu.Add()
-rcMenu.Add(mnu["refresh"], menuHandler)
-rcMenu.SetIcon(mnu["refresh"], shell32, 147)
+CreateRcMenu(mnu.refresh, shell32, 147)
 rcMenu.Add()
-rcMenu.Add(mnu["fileinfo"], menuHandler)
-rcMenu.SetIcon(mnu["fileinfo"], shell32, 222)
-rcMenu.Add(mnu["fileprop"], menuHandler)
-rcMenu.Add(mnu["fileinfolder"], menuHandler)
+CreateRcMenu(mnu.fileinfo, shell32, 222)
+CreateRcMenu(mnu.fileprop)
+CreateRcMenu(mnu.fileinfolder)
 rcMenu.Add()
-rcMenu.Add(mnu["aot"], menuHandler)
-rcMenu.Check(mnu["aot"])
-rcMenu.Add(mnu["border"], menuHandler)
+CreateRcMenu(mnu.aot)
+rcMenu.Check(mnu.aot)
+CreateRcMenu(mnu.border)
 rcMenu.Add()
-rcMenu.Add(mnu["shortcuts"], menuHandler)
-rcMenu.Add(mnu["about"], menuHandler)
-rcMenu.SetIcon(mnu["about"], shell32, 155)
+CreateRcMenu(mnu.shortcuts)
+CreateRcMenu(mnu.about)
+rcMenu.SetIcon(mnu.about, shell32, 155)
 
 OpenFile() ; openfile & loadimage
 
@@ -135,24 +132,24 @@ XButton2:: LoadNextImage() ; 5th mouse button
 
 menuHandler(Item, *) {
   switch Item {
-    case mnu["open"]: OpenFile()
-    case mnu["exit"]: GuiClose()
-    case mnu["first"]: LoadFirstImage()
-    case mnu["prev"]: LoadPrevImage()
-    case mnu["next"]: LoadNextImage()
-    case mnu["last"]: LoadLastImage()
-    case mnu["zoomin"]: ZoomImage(1)
-    case mnu["zoomout"]: ZoomImage(-1)
-    case mnu["fit"]: ZoomImage(2)
-    case mnu["osize"]: ZoomImage(0)
-    case mnu["refresh"]: ShowImage()
-    case mnu["fileinfo"]: FileInfo()
-    case mnu["fileprop"]: FileProperties()
-    case mnu["fileinfolder"]: ShowFileInFolder()
-    case mnu["aot"]: toggleAOT()
-    case mnu["border"]: toggleBorder()
-    case mnu["shortcuts"]: Shortcuts()
-    case mnu["about"]: About()
+    case mnu.open: OpenFile()
+    case mnu.exit: GuiClose()
+    case mnu.first: LoadFirstImage()
+    case mnu.prev: LoadPrevImage()
+    case mnu.next: LoadNextImage()
+    case mnu.last: LoadLastImage()
+    case mnu.zoomin: ZoomImage(1)
+    case mnu.zoomout: ZoomImage(-1)
+    case mnu.fit: ZoomImage(2)
+    case mnu.osize: ZoomImage(0)
+    case mnu.refresh: ShowImage()
+    case mnu.fileinfo: FileInfo()
+    case mnu.fileprop: FileProperties()
+    case mnu.fileinfolder: ShowFileInFolder()
+    case mnu.aot: toggleAOT()
+    case mnu.border: toggleBorder()
+    case mnu.shortcuts: Shortcuts()
+    case mnu.about: About()
   }
 }
 
@@ -280,13 +277,13 @@ ZoomImage(a) {
 
 ; Toggle Allways On Top
 toggleAOT(*) {
-  rcMenu.ToggleCheck(mnu["aot"])
+  rcMenu.ToggleCheck(mnu.aot)
   WinSetAlwaysOnTop(-1, g) ; toggle aot
 }
 
 ; Toggle Window Border
 toggleBorder(*) {
-  rcMenu.ToggleCheck(mnu["border"])
+  rcMenu.ToggleCheck(mnu.border)
   WinSetStyle("^0x800000", g) ; toggle border
   g.Show()
 }
@@ -353,11 +350,11 @@ FileInfo() {
   m .= "Original Size: " originalWidth "x" originalHeight "`n"
   m .= "Display Size: " imgWidth "x" imgHeight "`n"
   m .= "File Size: " fs
-  CoordMode("ToolTip","Screen")
-  WinGetPos(&x,&y,,,g)
-  tX := Max(0,x) ; Tooltip x pos
-  tY := Max(0,y) ; Tooltip y pos
-  ToolTip(m, tX+5, tY+5)
+  CoordMode("ToolTip", "Screen")
+  WinGetPos(&x, &y, , , g)
+  tX := Max(0, x) ; Tooltip x pos
+  tY := Max(0, y) ; Tooltip y pos
+  ToolTip(m, tX + 5, tY + 5)
 }
 
 ; Formatted File Date & Time
@@ -455,4 +452,11 @@ mesutakcan.blogspot.com
 github.com/akcansoft
 youtube.com/mesutakcan
 )", "About", "Owner" g.Hwnd)
+}
+
+CreateRcMenu(mItem, iconFile := "", iconN := 0) {
+  global rcMenu
+  rcMenu.Add(mItem, menuHandler)
+  if iconFile
+    rcMenu.SetIcon(mItem, iconFile, iconN)
 }
