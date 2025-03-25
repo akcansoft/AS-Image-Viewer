@@ -16,7 +16,6 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - Quick access via right-click menu
 - Drag and drop support
 - Command line support for opening images
-- Hidden close button in top right corner
 - File information display
 - Window border toggle option
 
@@ -101,7 +100,6 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Code improvements
   - Added command line support for opening images
   - Added drag and drop support
-  - Added hidden close button in top right corner
 
 ## Contact
 
