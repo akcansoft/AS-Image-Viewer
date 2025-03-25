@@ -23,11 +23,11 @@ Windows x64
 
 ## Installation
 
-Download the exe file to your Windows PC and run it. No installation required.
+Download the [AS Image Viewer.exe](https://github.com/akcansoft/AS-Image-Viewer/blob/main/AS%20Image%20Viewer.exe) file to your Windows PC and run it. No installation required.
 
 ## Source Code
 
-The source code for this program is available in the src folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
+The source code for this program is available in the [src](https://github.com/akcansoft/AS-Image-Viewer/tree/main/src) folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
 
 This application uses the library file [Gdip_All.ahk](https://github.com/buliasz/AHKv2-Gdip/blob/master/Gdip_All.ahk)
 
