@@ -1,4 +1,4 @@
-# AS Image Viewer
+# AS Image Viewer v1.3
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
@@ -16,10 +16,14 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - Quick access via right-click menu
 - Drag and drop support
 - Command line support for opening images
+- Hidden close button in top right corner
+- File information display
+- Window border toggle option
 
 ## Requirements
 
-Windows x64
+- Windows x64
+- [AutoHotkey v2](https://www.autohotkey.com/) (for running source code)
 
 ## Installation
 
@@ -30,6 +34,17 @@ Download the [AS Image Viewer.exe](https://github.com/akcansoft/AS-Image-Viewer/
 The source code for this program is available in the [src](https://github.com/akcansoft/AS-Image-Viewer/tree/main/src) folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
 
 This application uses the library file [Gdip_All.ahk](https://github.com/buliasz/AHKv2-Gdip/blob/master/Gdip_All.ahk)
+
+## Opening Image File
+
+- **Command Line**: Launch the application with an image file path as a parameter to open it directly.
+- **Drag and Drop to Exe File**: Drag an image file onto the AS Image Viewer exe file to open it immediately.
+
+### Opening File While Running
+
+- **Menu**: Right-click to open the menu and select "Open" to browse for an image file.
+- **Keyboard Shortcut**: Press `Ctrl+O` to open the file selection dialog.
+- **Drag and Drop**: Drag image files directly onto the application window to open them.
 
 ## Usage
 
@@ -42,7 +57,7 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
 
 ## Shortcuts
 
-### Keyboard Shortcuts:
+### Keyboard Shortcuts
 
 `Down Arrow` : Menu\
 `Home`: First Image\
@@ -86,6 +101,7 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Code improvements
   - Added command line support for opening images
   - Added drag and drop support
+  - Added hidden close button in top right corner
 
 ## Contact
 
@@ -100,4 +116,5 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
 This project is licensed under the GPL 3.0 License. For more information, see the `LICENSE` file.
 
 ## Contributing
+
 Contributions are welcome! If you'd like to add features, fix bugs, or improve the code, feel free to open a pull request.
