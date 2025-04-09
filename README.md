@@ -1,4 +1,4 @@
-# AS Image Viewer v1.3
+# AS Image Viewer v1.3.1
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
@@ -100,6 +100,8 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Code improvements
   - Added command line support for opening images
   - Added drag and drop support
+- v1.3.1: 09/04/2025
+  - Minor issues fixed
 
 ## Contact
 
