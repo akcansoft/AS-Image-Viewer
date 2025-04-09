@@ -1,22 +1,25 @@
-; AS Image Viewer v1.3
-; ====================
+; AS Image Viewer v1.3.1
+; ======================
 ; This application is a minimalist image viewer that uses GDI+ for rendering,
 ; supports multiple image formats,
 ; and allows easy navigation and management through a simple GUI.
 
-; 25/03/2025
+; 09/04/2025
 ; Mesut Akcan
 ; makcan@gmail.com
 ; akcansoft.blogspot.com
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-; R41
+; R42
 
 ; What's new in v1.3:
 ; - Code improvements
 ; - Added the ability to open an image file from the command line
 ; - Added the ability to open an image file by dragging and dropping it onto the GUI
+
+; What's new in v1.3.1:
+; - Minor issues fixed
 
 ; TODO:
 ; - Rotate image based on EXIF orientation
@@ -36,6 +39,7 @@ if !pToken := Gdip_Startup() {
   ExitApp()
 }
 
+A_ScriptName := "AS Image Viewer v1.3.1"
 extensions := "*.jpg; *.jpeg; *.png; *.gif; *.bmp; *.tif; *.ico; *.webp; *.wmf" ; Supported image file extensions
 dropFile := "" ; Dropped file
 DblClickTime := DllCall("GetDoubleClickTime", "UInt") ; Double click time
@@ -224,9 +228,12 @@ OpenFile() {
 
 ; Get the image file path from the command line arguments, dropped file, or file dialog
 GetImageFilePath() {
+  static argsUsed := false
   global dropFile, extensions
-  if A_Args.Length > 0 ; Command line arguments
+  if !argsUsed && A_Args.Length > 0 { ; Command line arguments
+    argsUsed := true
     return A_Args[1] ; Return the first command line argument
+  }
   if dropFile { ; Dropped file
     dFile := dropFile ; Dropped file path
     dropFile := "" ; Clear the dropFile variable
@@ -388,7 +395,7 @@ ShowGui() {
 getArrayValueIndex(val) {
   global imageFiles
   Loop imageFiles.Length { ; Loop through the imageFiles array
-    if (imageFiles[A_Index] == val) ; Check if the value matches the current index
+    if (imageFiles[A_Index] = val) ; Check if the value matches the current index
       return A_Index ; Return the index
   }
 }
@@ -543,9 +550,9 @@ Middle button double click: Fit to screen
 
 ; About dialog
 About(*) {
-  MsgBox("
+  MsgBox(Format("
 (
-AS Image Viewer v1.3
+{1}
 ©2025
 Mesut Akcan
 makcan@gmail.com
@@ -554,5 +561,5 @@ akcansoft.blogspot.com
 mesutakcan.blogspot.com
 github.com/akcansoft
 youtube.com/mesutakcan
-)", "About", "Owner" g.Hwnd)
+)", A_ScriptName), "About", "Owner" g.Hwnd)
 }
