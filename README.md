@@ -41,6 +41,8 @@ Current supported languages:
 - German `de.ini`
 - Italian `it.ini`
 
+**There may be errors in the translated texts because they are translated with artificial intelligence.**
+
 ### How to add a new language:
 1. Copy the `en.ini` file in the `lang` folder as the new language file ini file (e.g. `pl.ini` for Polish)
 2. Translate and save all strings in the new INI file.
