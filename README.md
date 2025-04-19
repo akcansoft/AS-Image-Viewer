@@ -1,4 +1,4 @@
-# AS Image Viewer v1.3.1
+# AS Image Viewer v1.4.0
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
@@ -18,6 +18,7 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - Command line support for opening images
 - File information display
 - Window border toggle option
+- Language support
 
 ## Requirements
 
@@ -26,7 +27,37 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 
 ## Installation
 
-Download the [AS Image Viewer.exe](https://github.com/akcansoft/AS-Image-Viewer/blob/main/AS%20Image%20Viewer.exe) file to your Windows PC and run it. No installation required.
+Download [AS Image Viewer.exe](https://github.com/akcansoft/AS-Image-Viewer/blob/main/src/AS%20Image%20Viewer.exe) file and [lang](https://github.com/akcansoft/AS-Image-Viewer/tree/main/src/lang) folder to your Windows PC and run it. No installation required.
+
+## Language Support
+
+The application supports multiple languages through INI files stored in the "lang" folder.
+Current supported languages:
+- English `en.ini`
+- Turkish `tr.ini`
+- Russian `ru.ini`
+- Chinese `zh.ini`
+- French `fr.ini`
+- German `de.ini`
+- Italian `it.ini`
+
+### How to add a new language:
+1. Copy the `en.ini` file in the `lang` folder as the new language file ini file (e.g. `pl.ini` for Polish)
+2. Translate and save all strings in the new INI file.
+3. Add language code to LCID Map in LoadLanguage() function:\
+Example: "0415", "pl", Polish (Poland)
+[Language Codes](https://www.autohotkey.com/docs/v2/misc/Languages.htm)
+
+or more simply:
+Translate the contents of the `en.ini` file into the desired language and save it.\
+**Lang INI files must be in UTF-16 file format**
+
+### Language INI File Structure:
+**[Menu]** Menu item texts\
+**[File]** File related messages\
+**[Shortcuts]** Keyboard and mouse shortcut descriptions\
+**[FileInfo]** File information texts\
+**[About]** About dialog texts
 
 ## Source Code
 
@@ -102,14 +133,17 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Added drag and drop support
 - v1.3.1: 09/04/2025
   - Minor issues fixed
+- v1.4.0: 19/04/2025
+  - Added language support (English, Turkish, Russian, Chinese, French, German, Italian)
 
-## Contact
-
-- **Author**: Mesut Akcan
-- **Email**: <makcan@gmail.com>
-- **Blog**: [akcansoft.blogspot.com](http://akcansoft.blogspot.com) and [mesutakcan.blogspot.com](http://mesutakcan.blogspot.com)
-- **GitHub**: [akcansoft](http://github.com/akcansoft)
-- **YouTube**: [Mesut Akcan](http://youtube.com/mesutakcan)
+## TODO
+- Copy image to clipboard
+- Rotate image based on EXIF orientation
+- Rotate image
+- Slideshow
+- Zoom to mouse cursor
+- Save settings
+- Add Menu Icons
 
 ## License
 
@@ -118,3 +152,11 @@ This project is licensed under the GPL 3.0 License. For more information, see th
 ## Contributing
 
 Contributions are welcome! If you'd like to add features, fix bugs, or improve the code, feel free to open a pull request.
+
+## Contact
+
+**Author**: Mesut Akcan\
+**Email**: <makcan@gmail.com>\
+**Blog**: [akcansoft.blogspot.com](http://akcansoft.blogspot.com) and [mesutakcan.blogspot.com](http://mesutakcan.blogspot.com)\
+**GitHub**: [akcansoft](http://github.com/akcansoft)\
+**YouTube**: [Mesut Akcan](http://youtube.com/mesutakcan)
