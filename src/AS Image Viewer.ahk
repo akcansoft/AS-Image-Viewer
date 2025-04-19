@@ -1,45 +1,44 @@
-; AS Image Viewer v1.3.1
+; AS Image Viewer v1.4.0
 ; ======================
 ; This application is a minimalist image viewer that uses GDI+ for rendering,
 ; supports multiple image formats,
 ; and allows easy navigation and management through a simple GUI.
 
-; 09/04/2025
+; 19/04/2025
 ; Mesut Akcan
 ; makcan@gmail.com
 ; akcansoft.blogspot.com
 ; mesutakcan.blogspot.com
 ; github.com/akcansoft
 ; youtube.com/mesutakcan
-; R42
+; R44
 
-; What's new in v1.3:
-; - Code improvements
-; - Added the ability to open an image file from the command line
-; - Added the ability to open an image file by dragging and dropping it onto the GUI
-
-; What's new in v1.3.1:
-; - Minor issues fixed
+; What's new in v1.4.0:
+; - Added language support (English, Turkish, Russian, Chinese, French, German, Italian)
 
 ; TODO:
+; - Copy image to clipboard
 ; - Rotate image based on EXIF orientation
 ; - Rotate image
 ; - Slideshow
 ; - Zoom to mouse cursor
 ; - Save settings
+; - Add Menu Icons
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 #Include "gdip_all.ahk" ; Load the GDI+ library
 
+A_ScriptName := "AS Image Viewer v1.4.0"
+lang := Map() ; Language strings
+
 ; Start GDI+
 if !pToken := Gdip_Startup() {
-  MsgBox("Failed to start GDI+", , "Icon! 4096")
+  MsgBox(lang["File_load_failed"], , "Icon! 4096")
   ExitApp()
 }
 
-A_ScriptName := "AS Image Viewer v1.3.1"
 extensions := "*.jpg; *.jpeg; *.png; *.gif; *.bmp; *.tif; *.ico; *.webp; *.wmf" ; Supported image file extensions
 dropFile := "" ; Dropped file
 DblClickTime := DllCall("GetDoubleClickTime", "UInt") ; Double click time
@@ -49,8 +48,8 @@ currentFolder := "" ; Current folder
 lastIndex := 0 ; Last index
 imgNo := 0 ; Image number
 
+LoadLanguage() ; Load language strings
 g := Gui("+OwnDialogs -Caption -Border +AlwaysOnTop -DPIScale") ; Create a GUI window
-
 ; GUI events
 g.OnEvent("Close", GuiClose) ; Close event
 g.OnEvent("Size", GuiSize) ; Size event
@@ -86,23 +85,27 @@ WheelDown:: ZoomImage(-1) ; mouse wheel down
 XButton1:: LoadImageByMode("prev") ; 4th mouse button
 XButton2:: LoadImageByMode("next") ; 5th mouse button
 ~MButton:: ; Middle mouse button
-{
-  ; if middle button was double clicked
-  if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime)
-    ZoomImage(2) ; Fit image to screen
-}
-~LButton:: ; Left button
-{
-  ; if left button was double clicked
-  if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime)
-    ZoomImage(0) ; Original size
-  else
-    MoveWindow() ; Move window
-}
+~LButton:: HandleMouseClick() ; Left mouse button
 #HotIf
 
+; Hotkey to handle double-click events
+HandleMouseClick() {
+  if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime) {
+    switch A_ThisHotkey {
+      case "~MButton":
+        ZoomImage(2) ; Fit image to screen on middle double click
+      case "~LButton":
+        ZoomImage(0) ; Original size on left double click
+    }
+    return
+  }
+  if (A_ThisHotkey = "~LButton") {
+    MoveWindow()
+  }
+}
+
 ; Create right-click menu
-CreateMenu(){
+CreateMenu() {
   global rcMenu, mnuTxt
 
   imageres := A_WinDir "\system32\imageres.dll" ; icon file
@@ -111,61 +114,60 @@ CreateMenu(){
 
   ; Right click menu items
   mnuTxt := {
-    open: "&Open`tCtrl+O",
-    exit: "&Exit`tAlt+F4",
-    first: "First I&mage`tHome",
-    prev: "&Previous Image`tLeft",
-    next: "&Next Image`tRight",
-    last: "Last Ima&ge`tEnd",
-    zoomin: "Zoom &In(+10%)`tNumpad +",
-    zoomout: "Zoom O&ut(-10%)`tNumpad -",
-    fit: "&Fit to Screen`tNumpad 1",
-    osize: "Original &Size(100%)`tNumpad 0",
-    refresh: "&Refresh`tF5",
-    fileinfo: "File Info`tF1",
-    fileprop: "Fi&le Properties`tF2",
-    fileinfolder: "S&how File In Folder`tF3",
-    aot: "Always On &Top",
-    border: "&Window Border",
-    shortcuts: "Short&cuts",
-    about: "&About"
+    open: lang["Menu_open"],
+    exit: lang["Menu_exit"],
+    first: lang["Menu_first"],
+    prev: lang["Menu_prev"],
+    next: lang["Menu_next"],
+    last: lang["Menu_last"],
+    zoomin: lang["Menu_zoomin"],
+    zoomout: lang["Menu_zoomout"],
+    fit: lang["Menu_fit"],
+    osize: lang["Menu_osize"],
+    refresh: lang["Menu_refresh"],
+    fileinfo: lang["Menu_fileinfo"],
+    fileprop: lang["Menu_fileprop"],
+    fileinfolder: lang["Menu_fileinfolder"],
+    aot: lang["Menu_aot"],
+    border: lang["Menu_border"],
+    shortcuts: lang["Menu_shortcuts"],
+    about: lang["Menu_about"]
   }
 
   ; Menu items array with text, icon file, and icon number
-  menuItems := [
-    { text: mnuTxt.open, iconFile: imageres, iconNo: 195 }, ; Open
-    { text: mnuTxt.exit, iconFile: imageres, iconNo: 94 }, ; Exit
+  menuItems := [{ text: lang["Menu_open"], iconFile: imageres, iconNo: 195 }, ; Open
+    { text: lang["Menu_exit"], iconFile: imageres, iconNo: 94 }, ; Exit
     { separator: true }, ; Separator
-    { text: mnuTxt.first }, ; First image
-    { text: mnuTxt.prev }, ; Previous image
-    { text: mnuTxt.next }, ; Next image
-    { text: mnuTxt.last }, ; Last image
+    { text: lang["Menu_first"] }, ; First image
+    { text: lang["Menu_prev"] }, ; Previous image
+    { text: lang["Menu_next"] }, ; Next image
+    { text: lang["Menu_last"] }, ; Last image
     { separator: true }, ; Separator
-    { text: mnuTxt.zoomin }, ; Zoom in
-    { text: mnuTxt.zoomout }, ; Zoom out
-    { text: mnuTxt.fit }, ; Fit to screen
-    { text: mnuTxt.osize }, ; Original size
+    { text: lang["Menu_zoomin"] }, ; Zoom in
+    { text: lang["Menu_zoomout"] }, ; Zoom out
+    { text: lang["Menu_fit"] }, ; Fit to screen
+    { text: lang["Menu_osize"] }, ; Original size
     { separator: true }, ; Separator
-    { text: mnuTxt.refresh, iconFile: shell32, iconNo: 147 }, ; Refresh
+    { text: lang["Menu_refresh"], iconFile: shell32, iconNo: 147 }, ; Refresh
     { separator: true }, ; Separator
-    { text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 }, ; File info
-    { text: mnuTxt.fileprop }, ; File properties
-    { text: mnuTxt.fileinfolder }, ; Show file in folder
+    { text: lang["Menu_fileinfo"], iconFile: shell32, iconNo: 222 }, ; File info
+    { text: lang["Menu_fileprop"] }, ; File properties
+    { text: lang["Menu_fileinfolder"] }, ; Show file in folder
     { separator: true }, ; Separator
-    { text: mnuTxt.aot, check: true }, ; Always on top
-    { text: mnuTxt.border }, ; Window border
+    { text: lang["Menu_aot"], check: true }, ; Always on top
+    { text: lang["Menu_border"] }, ; Window border
     { separator: true }, ; Separator
-    { text: mnuTxt.shortcuts }, ; Shortcuts
-    { text: mnuTxt.about, iconFile: shell32, iconNo: 155 } ; About
+    { text: lang["Menu_shortcuts"] }, ; Shortcuts
+    { text: lang["Menu_about"], iconFile: shell32, iconNo: 155 } ; About
   ]
 
   ; Add menu items to the right-click menu
   for index, item in menuItems {
-    ; Check if the item has a separator property 
+    ; Check if the item has a separator property
     if (item.HasOwnProp("separator")) {
       rcMenu.Add() ; add separator
       continue ; skip to the next item
-    }      
+    }
     ; Add the item to the right-click menu
     rcMenu.Add(item.text, menuHandler)
     ; Check if the item has an icon file and icon number
@@ -177,7 +179,7 @@ CreateMenu(){
     if (item.HasOwnProp("check") && item.check) {
       rcMenu.Check(item.text)
     }
-  }  
+  }
 }
 
 ; Menu handler function for right-click menu items
@@ -209,18 +211,18 @@ menuHandler(item, *) {
 OpenFile() {
   global bitmap, extensions
   ; Get the file path from args, dropped file, or file dialog
-  iFile := GetImageFilePath() 
+  iFile := GetImageFilePath()
   if !iFile { ; Check if the file path is empty
-    MsgBox("No file selected.", , "Icon! 4096")
-    if !IsSet(bitmap) 
+    MsgBox(lang["File_nofile"], , "Icon! 4096")
+    if !IsSet(bitmap)
       ExitApp()
     return
   }
-  
+
   SplitPath iFile, , , &ext ; Split the file path into extension
   ; Validate the image file
   if !ext || !InStr(extensions, ext) || !FileExist(iFile) {
-    MsgBox("Invalid or unsupported file:`n" iFile, , "Icon! 4096")
+    MsgBox(lang["File_invalid_file"] ":`n" iFile, , "Icon! 4096")
     return
   }
   LoadImageFromFile(iFile) ;Load the image from the file
@@ -240,7 +242,7 @@ GetImageFilePath() {
     return dFile ; Return the dropped file path
   }
   g.Opt("+OwnDialogs")
-  return FileSelect(, , "Select image file:", "Images (" extensions ")")
+  return FileSelect(, , lang["File_select_image_file"], "Images (" extensions ")")
 }
 
 ; Load the image from the specified file
@@ -253,7 +255,7 @@ LoadImageFromFile(lFile) {
     currentFolder := folder ; Update the current folder
     lastIndex := 0 ; Reset lastIndex when folder changes
   }
-  
+
   imgNo := getArrayValueIndex(lFile) ; Get the index of the file in the imageFiles array
   imgFile := lFile ; Set the image file
   LoadImage(imgNo) ; Load the image
@@ -292,12 +294,12 @@ LoadImage(index) {
   originalWidth := Gdip_GetImageWidth(bitmap)
   originalHeight := Gdip_GetImageHeight(bitmap)
 
-; Check if the image is larger than the screen
-  if (originalWidth > A_ScreenWidth || originalHeight > A_ScreenHeight) { 
+  ; Check if the image is larger than the screen
+  if (originalWidth > A_ScreenWidth || originalHeight > A_ScreenHeight) {
     ZoomImage(2) ; Fit to screen
     return
   }
-else {
+  else {
     imgWidth := originalWidth ; Set the image width
     imgHeight := originalHeight ; Set the image height
     zoomFactor := 1 ; Reset the zoom factor
@@ -313,11 +315,11 @@ LoadImageByMode(mode) {
     case "last": imgNo := imageFiles.Length ; Load the last image
     case "next": ; Next image
       imgNo++ ; Increment the image number
-      if (imgNo > imageFiles.Length) 
+      if (imgNo > imageFiles.Length)
         imgNo := 1 ; Reset the image number
     case "prev": ; Previous image
       imgNo-- ; Decrement the image number
-      if (imgNo < 1) 
+      if (imgNo < 1)
         imgNo := imageFiles.Length ; Reset the image number
   }
   LoadImage(imgNo) ; Load the image
@@ -384,7 +386,7 @@ toggleBorder(*) {
 ShowGui() {
   global imgWidth, imgHeight, g
   g.Show("w0")
-  local sizeTxt := "w" imgWidth " h" imgHeight 
+  local sizeTxt := "w" imgWidth " h" imgHeight
   if imgWidth > A_ScreenWidth || imgHeight > A_ScreenHeight
     g.Show(sizeTxt)
   else
@@ -440,14 +442,14 @@ FileInfo() {
   afd := FileDT("A") ; Last Access time
   fsize := FileGetSize(imgFile) ; File size
   fs := FormatByteSize(fsize) " (" RegExReplace(fsize, "(\d)(?=(\d{3})+(?!\d))", "$1.") " bytes)" ; File size
-  m := "Folder: " dir "`n" ; Tooltip message
-  m .= "File: " file "`n"
-  m .= "Modification time: " mfd "`n"
-  m .= "Creation time: " cfd "`n"
-  m .= "Last Access: " afd "`n"
-  m .= "Original Size: " originalWidth "x" originalHeight "`n"
-  m .= "Display Size: " imgWidth "x" imgHeight "`n"
-  m .= "File Size: " fs
+  m := lang["FileInfo_folder"] ": " dir "`n" ; Tooltip message
+  m .= lang["FileInfo_file"] ": " file "`n"
+  m .= lang["FileInfo_mod_time"] ": " mfd "`n"
+  m .= lang["FileInfo_create_time"] ": " cfd "`n"
+  m .= lang["FileInfo_access_time"] ": " afd "`n"
+  m .= lang["FileInfo_orig_size"] ": " originalWidth "x" originalHeight "`n"
+  m .= lang["FileInfo_disp_size"] ": " imgWidth "x" imgHeight "`n"
+  m .= lang["FileInfo_file_size"] ": " fs
   CoordMode("ToolTip", "Screen")
   WinGetPos(&x, &y, , , g)
   tX := Max(0, x) ; Tooltip x pos
@@ -489,7 +491,7 @@ MoveWindow() {
     if !GetKeyState("LButton", "P") {  ; Mouse left button has been released, so drag is complete.
       SetTimer(, 0) ; Stop tracking the mouse.
       ShowImage() ; Show the image
-      return 
+      return
     }
     ; Otherwise, reposition the window to match the change in mouse coordinates
     ; caused by the user having dragged the mouse:
@@ -512,54 +514,103 @@ Gui_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
 
 ; Keyboard shortcuts
 Shortcuts(*) {
-  MsgBox("
-(
-Keyboard Shortcuts:
--------------------
-Down Arrow : Menu
-Home: First Image
-Browser Back: Previous image
-Left Arrow: Previous image
-Browser Forward: Next image
-Right Arrow: Next image
-End: Last Image
-Numpad + : Zoom in
-Numpad - : Zoom out
-Numpad 0 : Original size
-Numpad 1 : Fit to screen
+  ; Create arrays for keyboard and mouse shortcuts
+  kbShortcuts := [
+    lang["Shortcuts_keyboard"],
+    "-------------------",
+    lang["Shortcuts_kb_down"],
+    lang["Shortcuts_kb_home"],
+    lang["Shortcuts_kb_back"],
+    lang["Shortcuts_kb_left"],
+    lang["Shortcuts_kb_forward"],
+    lang["Shortcuts_kb_right"],
+    lang["Shortcuts_kb_end"],
+    lang["Shortcuts_kb_plus"],
+    lang["Shortcuts_kb_minus"],
+    lang["Shortcuts_kb_zero"],
+    lang["Shortcuts_kb_one"],
+    lang["Shortcuts_kb_f1"],
+    lang["Shortcuts_kb_f2"],
+    lang["Shortcuts_kb_f3"],
+    lang["Shortcuts_kb_f5"],
+    lang["Shortcuts_kb_ctrl_o"],
+    lang["Shortcuts_kb_esc"],
+    lang["Shortcuts_kb_alt_f4"]
+  ]
 
-F1 : Image file info
-F2: File properties
-F3: Show file in folder
-F5 : Refresh
-Ctrl+O: Open image file
-Esc: Close file info
-Alt+F4: Exit App
+  mouseShortcuts := [
+    lang["Shortcuts_mouse"],
+    "------",
+    lang["Shortcuts_mouse_right"],
+    lang["Shortcuts_mouse_wheel_up"],
+    lang["Shortcuts_mouse_wheel_down"],
+    lang["Shortcuts_mouse_4"],
+    lang["Shortcuts_mouse_5"],
+    lang["Shortcuts_mouse_left_dbl"],
+    lang["Shortcuts_mouse_middle_dbl"]
+  ]
 
-Mouse:
-------
-Right click : Menu
-Mouse wheel up: Zoom in
-Mouse wheel down: Zoom out
-4. mouse button: Previous image
-5. mouse button: Next image
-Left button double click: Original size
-Middle button double click: Fit to screen
-)", "Shortcuts", "Owner" g.Hwnd)
+  ; Join arrays with newlines
+  for shortcut in kbShortcuts
+    txt .= shortcut "`n"
+  txt .= "`n"
+  for shortcut in mouseShortcuts
+    txt .= shortcut "`n"
+
+  MsgBox(txt, lang["Shortcuts_title"], "Owner" g.Hwnd)
+}
+
+; Load language based on system language
+LoadLanguage() {
+  ; https://www.autohotkey.com/docs/v2/misc/Languages.htm
+  LCID := Map(
+    "0409", "en", ; English (United States)
+    "041F", "tr", ; Turkish (Turkey)
+    "0419", "ru", ; Russian (Russia)
+    "0804", "zh", ; Chinese (Simplified, China)
+    "040C", "fr", ; French (France)
+    "0407", "de", ; German (Germany)
+    "0410", "it"  ; Italian (Italy)
+  )
+  userLang := LCID.Has(A_Language) ? LCID[A_Language] : "en"
+  langFile := A_ScriptDir "\lang\" userLang ".ini"
+
+  if !FileExist(langFile)
+    langFile := A_ScriptDir "\lang\en.ini" ; Fallback to English
+
+  if !FileExist(langFile) {
+    MsgBox("Language file not found: " langFile)
+    ExitApp()
+  }
+  ReadLanguageFile(langFile)
+}
+
+; Read all sections from INI file into lang Map
+ReadLanguageFile(file) {
+  sections := ["Menu", "File", "Shortcuts", "FileInfo", "About"]
+  for section in sections {
+    sectionContent := IniRead(file, section)
+    keys := StrSplit(sectionContent, "`n")
+    for key in keys {
+      if (key != "") {
+        parts := StrSplit(key, "=", , 2)
+        if (parts.Length = 2)
+          lang[section "_" parts[1]] := parts[2]
+      }
+    }
+  }
 }
 
 ; About dialog
 About(*) {
-  MsgBox(Format("
-(
-{1}
-©2025
-Mesut Akcan
-makcan@gmail.com
-
-akcansoft.blogspot.com
-mesutakcan.blogspot.com
-github.com/akcansoft
-youtube.com/mesutakcan
-)", A_ScriptName), "About", "Owner" g.Hwnd)
+  txt := A_ScriptName "`n"
+  txt .= "©2025`n"
+  txt .= "Mesut Akcan`n"
+  txt .= "makcan@gmail.com`n"
+  txt .= "`n"
+  txt .= "akcansoft.blogspot.com`n"
+  txt .= "mesutakcan.blogspot.com`n"
+  txt .= "github.com/akcansoft`n"
+  txt .= "youtube.com/mesutakcan"
+  MsgBox(txt, lang["About_about"], "Owner" g.Hwnd)
 }
