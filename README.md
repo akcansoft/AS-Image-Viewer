@@ -1,4 +1,4 @@
-# AS Image Viewer v1.4.0
+# AS Image Viewer v1.5
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
@@ -19,6 +19,7 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - File information display
 - Window border toggle option
 - Language support
+- Copy image to clipboard
 
 ## Requirements
 
@@ -107,6 +108,7 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
 `F3`: Show file in folder\
 `F5`: Refresh\
 `Ctrl+O`: Open image file\
+`Ctrl+C`: Copy image to clipboard
 `Esc`: Close file info\
 `Alt+F4`: Exit App
 
@@ -137,11 +139,13 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Minor issues fixed
 - v1.4.0: 19/04/2025
   - Added language support (English, Turkish, Russian, Chinese, French, German, Italian)
+- v1.5: 22/05/2025
+  - Copy image to clipboard
 
 ## TODO
-- Copy image to clipboard
-- Rotate image based on EXIF orientation
+- Paste image from clipboard
 - Rotate image
+- Rotate image based on EXIF orientation
 - Slideshow
 - Zoom to mouse cursor
 - Save settings
