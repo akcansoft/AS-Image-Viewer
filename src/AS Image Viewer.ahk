@@ -1,37 +1,42 @@
-; AS Image Viewer v1.4.0
-; ======================
-; This application is a minimalist image viewer that uses GDI+ for rendering,
-; supports multiple image formats,
-; and allows easy navigation and management through a simple GUI.
+/*
+======================
+AS Image Viewer
+v1.5
+R45
+22/05/2025
+======================
+This application is a minimalist image viewer that uses GDI+ for rendering,
+supports multiple image formats,
+and allows easy navigation and management through a simple GUI.
 
-; 19/04/2025
-; Mesut Akcan
-; makcan@gmail.com
-; akcansoft.blogspot.com
-; mesutakcan.blogspot.com
-; github.com/akcansoft
-; youtube.com/mesutakcan
-; R44
+Mesut Akcan
+makcan@gmail.com
+akcansoft.blogspot.com
+mesutakcan.blogspot.com
+github.com/akcansoft
+youtube.com/mesutakcan
 
-; What's new in v1.4.0:
-; - Added language support (English, Turkish, Russian, Chinese, French, German, Italian)
+What's new in v1.5:
+- Copy image to clipboard
 
-; TODO:
-; - Copy image to clipboard
-; - Rotate image based on EXIF orientation
-; - Rotate image
-; - Slideshow
-; - Zoom to mouse cursor
-; - Save settings
-; - Add Menu Icons
+TODO:
+- Paste image from clipboard
+- Rotate image
+- Rotate image based on EXIF orientation
+- Slideshow
+- Zoom to mouse cursor
+- Save settings
+- Add Menu Icons
+*/
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 #Include "gdip_all.ahk" ; Load the GDI+ library
 
-A_ScriptName := "AS Image Viewer v1.4.0"
+A_ScriptName := "AS Image Viewer v1.5"
 lang := Map() ; Language strings
+LoadLanguage() ; Load language strings
 
 ; Start GDI+
 if !pToken := Gdip_Startup() {
@@ -48,7 +53,6 @@ currentFolder := "" ; Current folder
 lastIndex := 0 ; Last index
 imgNo := 0 ; Image number
 
-LoadLanguage() ; Load language strings
 g := Gui("+OwnDialogs -Caption -Border +AlwaysOnTop -DPIScale") ; Create a GUI window
 ; GUI events
 g.OnEvent("Close", GuiClose) ; Close event
@@ -75,6 +79,7 @@ F2:: FileProperties() ; File properties
 F3:: ShowFileInFolder() ; Show file in folder
 F5:: ShowImage() ; Refresh
 ^o:: OpenFile() ; Ctrl+o
+^c:: CopyImageToClipboard() ; Ctrl+c
 Esc:: ToolTip() ; Close tooltip
 
 #HotIf mouseIsOver(g.Hwnd) ; Mouse is over the GUI window
@@ -125,6 +130,7 @@ CreateMenu() {
     fit: lang["Menu_fit"],
     osize: lang["Menu_osize"],
     refresh: lang["Menu_refresh"],
+    copy: lang["Menu_copy"],
     fileinfo: lang["Menu_fileinfo"],
     fileprop: lang["Menu_fileprop"],
     fileinfolder: lang["Menu_fileinfolder"],
@@ -140,24 +146,25 @@ CreateMenu() {
     { separator: true }, ; Separator
     { text: lang["Menu_first"] }, ; First image
     { text: lang["Menu_prev"] }, ; Previous image
-    { text: lang["Menu_next"] }, ; Next image
+    { text: lang["Menu_next"], iconFile: shell32, iconNo: 298 }, ; Next image
     { text: lang["Menu_last"] }, ; Last image
     { separator: true }, ; Separator
     { text: lang["Menu_zoomin"] }, ; Zoom in
     { text: lang["Menu_zoomout"] }, ; Zoom out
-    { text: lang["Menu_fit"] }, ; Fit to screen
+    { text: lang["Menu_fit"] , iconFile: shell32, iconNo: 16 }, ; Fit to screen
     { text: lang["Menu_osize"] }, ; Original size
     { separator: true }, ; Separator
-    { text: lang["Menu_refresh"], iconFile: shell32, iconNo: 147 }, ; Refresh
+    { text: lang["Menu_refresh"], iconFile: shell32, iconNo: 239 }, ; Refresh
+    { text: lang["Menu_copy"], iconFile: shell32, iconNo: 135 }, ; Copy
     { separator: true }, ; Separator
     { text: lang["Menu_fileinfo"], iconFile: shell32, iconNo: 222 }, ; File info
     { text: lang["Menu_fileprop"] }, ; File properties
-    { text: lang["Menu_fileinfolder"] }, ; Show file in folder
+    { text: lang["Menu_fileinfolder"], iconFile: shell32, iconNo: 267 }, ; Show file in folder
     { separator: true }, ; Separator
     { text: lang["Menu_aot"], check: true }, ; Always on top
-    { text: lang["Menu_border"] }, ; Window border
+    { text: lang["Menu_border"]}, ; Window border -- iconFile: shell32, iconNo: 98
     { separator: true }, ; Separator
-    { text: lang["Menu_shortcuts"] }, ; Shortcuts
+    { text: lang["Menu_shortcuts"] , iconFile: shell32, iconNo: 30 }, ; Shortcuts
     { text: lang["Menu_about"], iconFile: shell32, iconNo: 155 } ; About
   ]
 
@@ -197,6 +204,7 @@ menuHandler(item, *) {
     case mnuTxt.fit: ZoomImage(2)
     case mnuTxt.osize: ZoomImage(0)
     case mnuTxt.refresh: ShowImage()
+    case mnuTxt.copy: CopyImageToClipboard()
     case mnuTxt.fileinfo: FileInfo()
     case mnuTxt.fileprop: FileProperties()
     case mnuTxt.fileinfolder: ShowFileInFolder()
@@ -534,6 +542,7 @@ Shortcuts(*) {
     lang["Shortcuts_kb_f3"],
     lang["Shortcuts_kb_f5"],
     lang["Shortcuts_kb_ctrl_o"],
+    lang["Shortcuts_kb_ctrl_c"],
     lang["Shortcuts_kb_esc"],
     lang["Shortcuts_kb_alt_f4"]
   ]
@@ -588,17 +597,30 @@ LoadLanguage() {
 ; Read all sections from INI file into lang Map
 ReadLanguageFile(file) {
   sections := ["Menu", "File", "Shortcuts", "FileInfo", "About"]
-  for section in sections {
-    sectionContent := IniRead(file, section)
+  for section in sections { ; Read each section
+    sectionContent := IniRead(file, section) ; Read the section content
     keys := StrSplit(sectionContent, "`n")
-    for key in keys {
-      if (key != "") {
+    for key in keys { ; Read each key-value pair
+      key := Trim(key) ; Remove leading and trailing whitespace
+      if (key != "") { ; Check if the key is not empty
+        ; Split the key into name and value
         parts := StrSplit(key, "=", , 2)
-        if (parts.Length = 2)
-          lang[section "_" parts[1]] := parts[2]
+        if (parts.Length = 2) ; Check if the split was successful
+          lang[section "_" parts[1]] := parts[2] ; Store the key-value pair in the lang Map
       }
     }
   }
+}
+
+; Copy the image to the clipboard at its original size
+CopyImageToClipboard() {
+  global bitmap
+  if !IsSet(bitmap) || !bitmap {
+    MsgBox(lang["File_nofile"], , "Icon! 4096")
+    return
+  }
+  ; Copy the image to the clipboard
+  Gdip_SetBitmapToClipboard(bitmap)
 }
 
 ; About dialog
