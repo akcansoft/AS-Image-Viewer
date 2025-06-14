@@ -1,4 +1,4 @@
-# AS Image Viewer v1.5
+# AS Image Viewer v1.6
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
@@ -41,14 +41,13 @@ Current supported languages:
 - French `fr.ini`
 - German `de.ini`
 - Italian `it.ini`
+- Spanish `es.ini`
 
 **There may be errors in the translated texts because they are translated with artificial intelligence.**
 
 ### How to add a new language:
 1. Copy the `en.ini` file in the `lang` folder as the new language file ini file (e.g. `pl.ini` for Polish)
 2. Translate and save all strings in the new INI file.
-3. Add language code to LCID Map in LoadLanguage() function:\
-Example: "0415", "pl", Polish (Poland)
 [Language Codes](https://www.autohotkey.com/docs/v2/misc/Languages.htm)
 
 or more simply:
@@ -141,6 +140,11 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Added language support (English, Turkish, Russian, Chinese, French, German, Italian)
 - v1.5: 22/05/2025
   - Copy image to clipboard
+- v1.6: 14/06/2025
+  - Code improvements
+  - Language support optimization
+  - Spanish language support added
+  - Added keyboard shortcuts to context menu
 
 ## TODO
 - Paste image from clipboard
