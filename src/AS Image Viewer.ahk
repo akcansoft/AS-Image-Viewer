@@ -1,9 +1,9 @@
 /*
 ======================
 AS Image Viewer
-v1.5
-R45
-22/05/2025
+v1.6
+R47
+14/06/2025
 ======================
 This application is a minimalist image viewer that uses GDI+ for rendering,
 supports multiple image formats,
@@ -16,8 +16,11 @@ mesutakcan.blogspot.com
 github.com/akcansoft
 youtube.com/mesutakcan
 
-What's new in v1.5:
-- Copy image to clipboard
+What's new in v1.6:
+- Code improvements
+- Language support optimization
+- Spanish language support added
+- Added keyboard shortcuts to context menu
 
 TODO:
 - Paste image from clipboard
@@ -32,10 +35,12 @@ TODO:
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
-#Include "gdip_all.ahk" ; Load the GDI+ library
 
-A_ScriptName := "AS Image Viewer v1.5"
-lang := Map() ; Language strings
+#Include "gdip_all.ahk" ; Load the GDI+ library
+#Include "langSupport.ahk" ; Load language support library
+
+A_ScriptName := "AS Image Viewer v1.6"
+
 LoadLanguage() ; Load language strings
 
 ; Start GDI+
@@ -119,53 +124,55 @@ CreateMenu() {
 
   ; Right click menu items
   mnuTxt := {
-    open: lang["Menu_open"],
-    exit: lang["Menu_exit"],
-    first: lang["Menu_first"],
-    prev: lang["Menu_prev"],
-    next: lang["Menu_next"],
-    last: lang["Menu_last"],
-    zoomin: lang["Menu_zoomin"],
-    zoomout: lang["Menu_zoomout"],
-    fit: lang["Menu_fit"],
-    osize: lang["Menu_osize"],
-    refresh: lang["Menu_refresh"],
-    copy: lang["Menu_copy"],
-    fileinfo: lang["Menu_fileinfo"],
-    fileprop: lang["Menu_fileprop"],
-    fileinfolder: lang["Menu_fileinfolder"],
-    aot: lang["Menu_aot"],
-    border: lang["Menu_border"],
-    shortcuts: lang["Menu_shortcuts"],
-    about: lang["Menu_about"]
+    open: lang["Menu_open"] . "`tCtrl+O", ; Open image file
+    exit: lang["Menu_exit"] . "`tAlt+F4", ; Exit application
+    first: lang["Menu_first"] . "`tHome", ; First image
+    prev: lang["Menu_prev"] . "`tLeft", ; Previous image
+    next: lang["Menu_next"] . "`tRight", ; Next image
+    last: lang["Menu_last"] . "`tEnd", ; Last image
+    zoomin: lang["Menu_zoomin"] . "`tNumpad +", ; Zoom in
+    zoomout: lang["Menu_zoomout"] . "`tNumpad -", ; Zoom out
+    fit: lang["Menu_fit"] . "`tNumpad 1", ; Fit to screen
+    osize: lang["Menu_osize"] . "`tNumpad 0", ; Original size
+    refresh: lang["Menu_refresh"] . "`tF5", ; Refresh image
+    copy: lang["Menu_copy"] . "`tCtrl+C", ; Copy image
+    ; File info and properties
+    fileinfo: lang["Menu_fileinfo"] . "`tF1", ; File info
+    fileprop: lang["Menu_fileprop"] . "`tF2", ; File properties
+    fileinfolder: lang["Menu_fileinfolder"] . "`tF3", ; Show file in folder
+
+    aot: lang["Menu_aot"], ; Always on top
+    border: lang["Menu_border"], ; Window border
+    shortcuts: lang["Menu_shortcuts"], ; Shortcuts
+    about: lang["Menu_about"] ; About dialog
   }
 
   ; Menu items array with text, icon file, and icon number
-  menuItems := [{ text: lang["Menu_open"], iconFile: imageres, iconNo: 195 }, ; Open
-    { text: lang["Menu_exit"], iconFile: imageres, iconNo: 94 }, ; Exit
+  menuItems := [{ text: mnuTxt.open, iconFile: imageres, iconNo: 195 }, ; Open
+    { text: mnuTxt.exit, iconFile: imageres, iconNo: 94 }, ; Exit
     { separator: true }, ; Separator
-    { text: lang["Menu_first"] }, ; First image
-    { text: lang["Menu_prev"] }, ; Previous image
-    { text: lang["Menu_next"], iconFile: shell32, iconNo: 298 }, ; Next image
-    { text: lang["Menu_last"] }, ; Last image
+    { text: mnuTxt.first }, ; First image
+    { text: mnuTxt.prev }, ; Previous image
+    { text: mnuTxt.next, iconFile: shell32, iconNo: 298 }, ; Next image
+    { text: mnuTxt.last }, ; Last image
     { separator: true }, ; Separator
-    { text: lang["Menu_zoomin"] }, ; Zoom in
-    { text: lang["Menu_zoomout"] }, ; Zoom out
-    { text: lang["Menu_fit"] , iconFile: shell32, iconNo: 16 }, ; Fit to screen
-    { text: lang["Menu_osize"] }, ; Original size
+    { text: mnuTxt.zoomin }, ; Zoom in
+    { text: mnuTxt.zoomout }, ; Zoom out
+    { text: mnuTxt.fit , iconFile: shell32, iconNo: 16 }, ; Fit to screen
+    { text: mnuTxt.osize }, ; Original size
     { separator: true }, ; Separator
-    { text: lang["Menu_refresh"], iconFile: shell32, iconNo: 239 }, ; Refresh
-    { text: lang["Menu_copy"], iconFile: shell32, iconNo: 135 }, ; Copy
+    { text: mnuTxt.refresh, iconFile: shell32, iconNo: 239 }, ; Refresh
+    { text: mnuTxt.copy, iconFile: shell32, iconNo: 135 }, ; Copy
     { separator: true }, ; Separator
-    { text: lang["Menu_fileinfo"], iconFile: shell32, iconNo: 222 }, ; File info
-    { text: lang["Menu_fileprop"] }, ; File properties
-    { text: lang["Menu_fileinfolder"], iconFile: shell32, iconNo: 267 }, ; Show file in folder
+    { text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 }, ; File info
+    { text: mnuTxt.fileprop }, ; File properties
+    { text: mnuTxt.fileinfolder, iconFile: shell32, iconNo: 267 }, ; Show file in folder
     { separator: true }, ; Separator
-    { text: lang["Menu_aot"], check: true }, ; Always on top
-    { text: lang["Menu_border"]}, ; Window border -- iconFile: shell32, iconNo: 98
+    { text: mnuTxt.aot, check: true }, ; Always on top
+    { text: mnuTxt.border}, ; Window border -- iconFile: shell32, iconNo: 98
     { separator: true }, ; Separator
-    { text: lang["Menu_shortcuts"] , iconFile: shell32, iconNo: 30 }, ; Shortcuts
-    { text: lang["Menu_about"], iconFile: shell32, iconNo: 155 } ; About
+    { text: mnuTxt.shortcuts , iconFile: shell32, iconNo: 30 }, ; Shortcuts
+    { text: mnuTxt.about, iconFile: shell32, iconNo: 155 } ; About
   ]
 
   ; Add menu items to the right-click menu
@@ -567,49 +574,6 @@ Shortcuts(*) {
     txt .= shortcut "`n"
 
   MsgBox(txt, lang["Shortcuts_title"], "Owner" g.Hwnd)
-}
-
-; Load language based on system language
-LoadLanguage() {
-  ; https://www.autohotkey.com/docs/v2/misc/Languages.htm
-  LCID := Map(
-    "0409", "en", ; English (United States)
-    "041F", "tr", ; Turkish (Turkey)
-    "0419", "ru", ; Russian (Russia)
-    "0804", "zh", ; Chinese (Simplified, China)
-    "040C", "fr", ; French (France)
-    "0407", "de", ; German (Germany)
-    "0410", "it"  ; Italian (Italy)
-  )
-  userLang := LCID.Has(A_Language) ? LCID[A_Language] : "en"
-  langFile := A_ScriptDir "\lang\" userLang ".ini"
-
-  if !FileExist(langFile)
-    langFile := A_ScriptDir "\lang\en.ini" ; Fallback to English
-
-  if !FileExist(langFile) {
-    MsgBox("Language file not found: " langFile)
-    ExitApp()
-  }
-  ReadLanguageFile(langFile)
-}
-
-; Read all sections from INI file into lang Map
-ReadLanguageFile(file) {
-  sections := ["Menu", "File", "Shortcuts", "FileInfo", "About"]
-  for section in sections { ; Read each section
-    sectionContent := IniRead(file, section) ; Read the section content
-    keys := StrSplit(sectionContent, "`n")
-    for key in keys { ; Read each key-value pair
-      key := Trim(key) ; Remove leading and trailing whitespace
-      if (key != "") { ; Check if the key is not empty
-        ; Split the key into name and value
-        parts := StrSplit(key, "=", , 2)
-        if (parts.Length = 2) ; Check if the split was successful
-          lang[section "_" parts[1]] := parts[2] ; Store the key-value pair in the lang Map
-      }
-    }
-  }
 }
 
 ; Copy the image to the clipboard at its original size
