@@ -1,5 +1,15 @@
 # AS Image Viewer v1.6
 
+[![AutoHotkey](https://img.shields.io/badge/Language-AutoHotkey_v2-green.svg)](https://www.autohotkey.com/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://www.microsoft.com/windows)
+[![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.6-brightgreen.svg)](https://github.com/akcansoft/AS-Image-Viewer/releases) 
+
+![GitHub stars](https://img.shields.io/github/stars/akcansoft/AS-Image-Viewer?style=social)
+![GitHub forks](https://img.shields.io/github/forks/akcansoft/AS-Image-Viewer?style=social)
+![GitHub issues](https://img.shields.io/github/issues/akcansoft/AS-Image-Viewer)
+[![Downloads](https://img.shields.io/github/downloads/akcansoft/AS-Image-Viewer/total)](https://github.com/akcansoft/AS-Image-Viewer/releases)
+
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
 ![Screenshot v1.1](https://github.com/akcansoft/AS-Image-Viewer/blob/main/src/ss-v1.1.jpg "Screenshot v1.1")
