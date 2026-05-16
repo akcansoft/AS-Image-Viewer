@@ -3,16 +3,16 @@
 [![AutoHotkey](https://img.shields.io/badge/Language-AutoHotkey_v2-green.svg)](https://www.autohotkey.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.6-brightgreen.svg)](https://github.com/akcansoft/AS-Image-Viewer/releases) 
+[![Version](https://img.shields.io/badge/Version-1.6-brightgreen.svg)](https://github.com/mesutakcan/AS-Image-Viewer/releases) 
 
-![GitHub stars](https://img.shields.io/github/stars/akcansoft/AS-Image-Viewer?style=social)
-![GitHub forks](https://img.shields.io/github/forks/akcansoft/AS-Image-Viewer?style=social)
-![GitHub issues](https://img.shields.io/github/issues/akcansoft/AS-Image-Viewer)
-[![Downloads](https://img.shields.io/github/downloads/akcansoft/AS-Image-Viewer/total)](https://github.com/akcansoft/AS-Image-Viewer/releases)
+![GitHub stars](https://img.shields.io/github/stars/mesutakcan/AS-Image-Viewer?style=social)
+![GitHub forks](https://img.shields.io/github/forks/mesutakcan/AS-Image-Viewer?style=social)
+![GitHub issues](https://img.shields.io/github/issues/mesutakcan/AS-Image-Viewer)
+[![Downloads](https://img.shields.io/github/downloads/mesutakcan/AS-Image-Viewer/total)](https://github.com/mesutakcan/AS-Image-Viewer/releases)
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
-![Screenshot v1.1](https://github.com/akcansoft/AS-Image-Viewer/blob/main/src/ss-v1.1.jpg "Screenshot v1.1")
+![Screenshot v1.1](https://github.com/mesutakcan/AS-Image-Viewer/blob/main/src/ss-v1.1.jpg "Screenshot v1.1")
 
 ## Features
 
@@ -38,7 +38,7 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 
 ## Installation
 
-Download [AS Image Viewer.exe](https://github.com/akcansoft/AS-Image-Viewer/blob/main/src/AS%20Image%20Viewer.exe) file and [lang](https://github.com/akcansoft/AS-Image-Viewer/tree/main/src/lang) folder to your Windows PC and run it. No installation required.
+Download [AS Image Viewer.exe](https://github.com/mesutakcan/AS-Image-Viewer/blob/main/src/AS%20Image%20Viewer.exe) file and [lang](https://github.com/mesutakcan/AS-Image-Viewer/tree/main/src/lang) folder to your Windows PC and run it. No installation required.
 
 ## Language Support
 
@@ -73,7 +73,7 @@ Translate the contents of the `en.ini` file into the desired language and save i
 
 ## Source Code
 
-The source code for this program is available in the [src](https://github.com/akcansoft/AS-Image-Viewer/tree/main/src) folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
+The source code for this program is available in the [src](https://github.com/mesutakcan/AS-Image-Viewer/tree/main/src) folder. To use the program source code, you'll need to have AutoHotkey v2 installed on your system. You can run the script directly using the AutoHotkey interpreter. Alternatively, you can compile the script into an executable file for easier distribution.
 
 This application uses the library file [Gdip_All.ahk](https://github.com/buliasz/AHKv2-Gdip/blob/master/Gdip_All.ahk)
 
@@ -177,6 +177,6 @@ Contributions are welcome! If you'd like to add features, fix bugs, or improve t
 
 **Author**: Mesut Akcan\
 **Email**: <makcan@gmail.com>\
-**Blog**: [akcansoft.blogspot.com](http://akcansoft.blogspot.com) and [mesutakcan.blogspot.com](http://mesutakcan.blogspot.com)\
-**GitHub**: [akcansoft](http://github.com/akcansoft)\
+**Blog**: [mesutakcan.blogspot.com](http://mesutakcan.blogspot.com)\
+**GitHub**: [mesutakcan](http://github.com/mesutakcan)\
 **YouTube**: [Mesut Akcan](http://youtube.com/mesutakcan)
