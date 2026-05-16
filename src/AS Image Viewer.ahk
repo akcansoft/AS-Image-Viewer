@@ -11,9 +11,8 @@ and allows easy navigation and management through a simple GUI.
 
 Mesut Akcan
 makcan@gmail.com
-akcansoft.blogspot.com
 mesutakcan.blogspot.com
-github.com/akcansoft
+github.com/mesutakcan
 youtube.com/mesutakcan
 
 What's new in v1.6:
@@ -594,9 +593,8 @@ About(*) {
   txt .= "Mesut Akcan`n"
   txt .= "makcan@gmail.com`n"
   txt .= "`n"
-  txt .= "akcansoft.blogspot.com`n"
   txt .= "mesutakcan.blogspot.com`n"
-  txt .= "github.com/akcansoft`n"
+  txt .= "github.com/mesutakcan`n"
   txt .= "youtube.com/mesutakcan"
   MsgBox(txt, lang["About_about"], "Owner" g.Hwnd)
 }
