@@ -1,9 +1,8 @@
 /*
 Mesut Akcan
 makcan@gmail.com
-akcansoft.blogspot.com
 mesutakcan.blogspot.com
-github.com/akcansoft
+github.com/mesutakcan
 youtube.com/mesutakcan
 */
 
