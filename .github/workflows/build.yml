@@ -20,7 +20,7 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest `
-            -Uri "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.20/AutoHotkey_2.0.20.zip" `
+            -Uri "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.26/AutoHotkey_2.0.26.zip" `
             -OutFile "ahk.zip"
 
           Invoke-WebRequest `
@@ -37,7 +37,7 @@ jobs:
           # =============================
           # SADECE BUNU DEĞİŞTİR
           # =============================
-          $ahk_file = "src/AS Pixel Color.ahk"
+          $ahk_file = "src/AS Image Viewer.ahk"
           # =============================
 
           # Dosya adını al
