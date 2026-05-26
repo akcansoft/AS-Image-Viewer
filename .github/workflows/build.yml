@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
+  workflow_dispatch: # Manuel tetikleme aktif
 
 jobs:
   build:
@@ -19,7 +19,26 @@ jobs:
       # 1) Repo'yu çek
       - uses: actions/checkout@v4
 
-      # 2) AutoHotkey + Ahk2Exe indir
+      # 2) Sürüm Numarasını src/version.txt dosyasından oku
+      - name: Sürüm Bilgisini Oku
+        id: get_version
+        shell: pwsh
+        run: |
+          $versionFile = "src/version.txt"
+          if (!(Test-Path $versionFile)) { throw "src/version.txt dosyası bulunamadı!" }
+          
+          # Dosya içeriğini oku ve boşlukları temizle
+          $version = (Get-Content $versionFile).Trim()
+          if ([string]::IsNullOrEmpty($version)) { throw "src/version.txt içeriği boş!" }
+          
+          # Eğer sürüm 'v' ile başlamıyorsa başına 'v' ekle (Örn: 1.0.1 -> v1.0.1)
+          if (!$version.StartsWith("v")) { $version = "v$version" }
+          
+          Write-Host "Tespit edilen sürüm: $version"
+          # Sürüm numarasını sonraki adımlarda kullanmak üzere kaydet
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      # 3) AutoHotkey + Ahk2Exe indir
       - name: AutoHotkey ve Ahk2Exe İndir
         shell: pwsh
         run: |
@@ -32,7 +51,7 @@ jobs:
           Expand-Archive ahk.zip -DestinationPath ahk
           Expand-Archive compiler.zip -DestinationPath ahk
 
-      # 3) Derleme
+      # 4) Derleme
       - name: Derleme (x64 ve x32)
         shell: pwsh
         run: |
@@ -59,31 +78,29 @@ jobs:
           $target64 = Join-Path $distDir $exeName64
           $target32 = Join-Path $distDir $exeName32
 
-          # x64 Derleme (İşlemin bitmesini kesin olarak bekliyoruz)
+          # x64 Derleme
           Write-Host "x64 derleniyor..."
           $p64 = Start-Process -FilePath $compiler -ArgumentList "/in `"$ahk_file`" /base `"$ahk64`" /icon `"$icon_file`" /out `"$target64`"" -Wait -NoNewWindow -PassThru
-          
-          # Dosya kontrolünden önce diske yazılması için yarım saniye tolerans tanıyoruz
           Start-Sleep -Milliseconds 500
-          if (!(Test-Path $target64)) { throw "x64 derleme başarısız! Çıktı dosyası diskte bulunamadı." }
+          if (!(Test-Path $target64)) { throw "x64 derleme başarısız!" }
 
-          # x32 Derleme (İşlemin bitmesini kesin olarak bekliyoruz)
+          # x32 Derleme
           Write-Host "x32 derleniyor..."
           $p32 = Start-Process -FilePath $compiler -ArgumentList "/in `"$ahk_file`" /base `"$ahk32`" /icon `"$icon_file`" /out `"$target32`"" -Wait -NoNewWindow -PassThru
-          
           Start-Sleep -Milliseconds 500
-          if (!(Test-Path $target32)) { throw "x32 derleme başarısız! Çıktı dosyası diskte bulunamadı." }
+          if (!(Test-Path $target32)) { throw "x32 derleme başarısız!" }
 
           Write-Host "=== dist klasörü içeriği ==="
           Get-ChildItem $distDir
 
-      # 4) Mevcut Release'i Güncelle / Dosyaları Ekle
-      - name: Mevcut Release'e Dosyaları Yükle
+      # 5) version.txt'den gelen değere göre Release'i oluştur veya güncelle
+      - name: Release Güncelle veya Oluştur
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.exe
-          tag_name: ${{ github.ref_name }}
-          overwrite: true
-          body: "Derleme dosyaları başarıyla güncellendi."
+          tag_name: ${{ steps.get_version.outputs.VERSION }} # Dosyadan okunan dinamik tag adı
+          name: ${{ steps.get_version.outputs.VERSION }}     # Release başlığı (Örn: v1.0.0)
+          overwrite_files: true                              # Doğru parametre ismiyle güncellendi
+          body: "Derleme dosyaları otomatik olarak güncellendi."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
