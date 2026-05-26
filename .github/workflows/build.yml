@@ -59,18 +59,20 @@ jobs:
           $target64 = Join-Path $distDir $exeName64
           $target32 = Join-Path $distDir $exeName32
 
-          # x64 Derleme
+          # x64 Derleme (İşlemin bitmesini kesin olarak bekliyoruz)
           Write-Host "x64 derleniyor..."
-          & $compiler /in $ahk_file /base $ahk64 /icon $icon_file /out $target64
+          $p64 = Start-Process -FilePath $compiler -ArgumentList "/in `"$ahk_file`" /base `"$ahk64`" /icon `"$icon_file`" /out `"$target64`"" -Wait -NoNewWindow -PassThru
           
-          # Çıkış kodu yerine dosyanın fiziksel olarak üretilip üretilmediğine bakıyoruz
-          if (!(Test-Path $target64)) { throw "x64 derleme başarısız! Çıktı dosyası bulunamadı." }
+          # Dosya kontrolünden önce diske yazılması için yarım saniye tolerans tanıyoruz
+          Start-Sleep -Milliseconds 500
+          if (!(Test-Path $target64)) { throw "x64 derleme başarısız! Çıktı dosyası diskte bulunamadı." }
 
-          # x32 Derleme
+          # x32 Derleme (İşlemin bitmesini kesin olarak bekliyoruz)
           Write-Host "x32 derleniyor..."
-          & $compiler /in $ahk_file /base $ahk32 /icon $icon_file /out $target32
+          $p32 = Start-Process -FilePath $compiler -ArgumentList "/in `"$ahk_file`" /base `"$ahk32`" /icon `"$icon_file`" /out `"$target32`"" -Wait -NoNewWindow -PassThru
           
-          if (!(Test-Path $target32)) { throw "x32 derleme başarısız! Çıktı dosyası bulunamadı." }
+          Start-Sleep -Milliseconds 500
+          if (!(Test-Path $target32)) { throw "x32 derleme başarısız! Çıktı dosyası diskte bulunamadı." }
 
           Write-Host "=== dist klasörü içeriği ==="
           Get-ChildItem $distDir
