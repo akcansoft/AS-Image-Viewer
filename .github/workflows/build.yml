@@ -38,7 +38,7 @@ jobs:
         shell: pwsh
         run: |
           $rootDir = Get-Location
-          $ahk_file = Join-Path $rootDir "src/AS Pixel Color.ahk"
+          $ahk_file = Join-Path $rootDir "src/AS Image Viewer.ahk"
           $icon_file = Join-Path $rootDir "src/app_icon.ico"
           $distDir = Join-Path $rootDir "dist"
           
