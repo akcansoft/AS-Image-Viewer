@@ -1,9 +1,9 @@
-# AS Image Viewer v1.6
+# AS Image Viewer v1.7
 
 [![AutoHotkey](https://img.shields.io/badge/Language-AutoHotkey_v2-green.svg)](https://www.autohotkey.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.6-brightgreen.svg)](https://github.com/mesutakcan/AS-Image-Viewer/releases) 
+[![Version](https://img.shields.io/badge/Version-1.7-brightgreen.svg)](https://github.com/mesutakcan/AS-Image-Viewer/releases) 
 
 ![GitHub stars](https://img.shields.io/github/stars/mesutakcan/AS-Image-Viewer?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/mesutakcan/AS-Image-Viewer?style=social)
@@ -12,7 +12,7 @@
 
 AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering. It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 
-![Screenshot v1.1](https://github.com/mesutakcan/AS-Image-Viewer/blob/main/src/ss-v1.1.jpg "Screenshot v1.1")
+![Screenshot v1.1](docs/app-screen-shot.jpg "Screenshot v1.1")
 
 ## Features
 
@@ -23,13 +23,17 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - Refresh image with F5 key
 - Simple and user-friendly interface
 - Always on top option
-- Quick access via right-click menu
+- Center image option
+- Right-click menu with icons
 - Drag and drop support
 - Command line support for opening images
 - File information display
 - Window border toggle option
+- Save last window position, folder and settings
 - Language support
+- Delete current image
 - Copy image to clipboard
+- Paste image from clipboard
 
 ## Requirements
 
@@ -116,8 +120,10 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
 `F2`: File properties\
 `F3`: Show file in folder\
 `F5`: Refresh\
+`Del`: Delete image\
 `Ctrl+O`: Open image file\
-`Ctrl+C`: Copy image to clipboard
+`Ctrl+C`: Copy image to clipboard\
+`Ctrl+V`: Paste image from clipboard\
 `Esc`: Close file info\
 `Alt+F4`: Exit App
 
@@ -155,15 +161,18 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Language support optimization
   - Spanish language support added
   - Added keyboard shortcuts to context menu
+- v1.7: 26/05/2026
+  - Added paste image from clipboard
+  - Added delete image feature
+  - Added save settings (window position, center image, etc.)
+  - Added icons to right-click menu
+  - Improved memory handling when loading files
 
 ## TODO
-- Paste image from clipboard
 - Rotate image
 - Rotate image based on EXIF orientation
 - Slideshow
 - Zoom to mouse cursor
-- Save settings
-- Add Menu Icons
 
 ## License
 
