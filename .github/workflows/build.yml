@@ -4,41 +4,62 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch: # Manuel tetikleme aktif
+  workflow_dispatch: # Actions sekmesinden manuel çalıştırmayı sağlar
+
+# =================================================================
+# DEĞİŞKENLER
+# =================================================================
+env:
+  AHK_FILE_PATH: "src/AS Image Viewer.ahk"
+  ICON_FILE_PATH: "src/app_icon.ico"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+# =================================================================
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
       contents: write
-    
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # 1) Repo'yu çek
       - uses: actions/checkout@v4
 
-      # 2) Sürüm Numarasını src/version.txt dosyasından oku
-      - name: Sürüm Bilgisini Oku
-        id: get_version
+      # 2) Hangi Tag için çalışıldığını tespit et
+      - name: Sürüm (Tag) Bilgisini Al
+        id: get_tag
         shell: pwsh
         run: |
-          $versionFile = "src/version.txt"
-          if (!(Test-Path $versionFile)) { throw "src/version.txt dosyası bulunamadı!" }
+          # GitHub'ın sağladığı tag adını alıyoruz (Örn: v1.7 veya refs/tags/v1.7)
+          $ref = "${{ github.ref_name }}"
           
-          # Dosya içeriğini oku ve boşlukları temizle
-          $version = (Get-Content $versionFile).Trim()
-          if ([string]::IsNullOrEmpty($version)) { throw "src/version.txt içeriği boş!" }
+          # Eğer manuel tetiklendiyse ve kullanıcı branch seçtiyse uyarı ver
+          if ($ref -eq "main" -or $ref -eq "master") {
+            throw "HATA: Lütfen sol üstteki branch listesinden 'main' yerine exe yüklemek istediğiniz 'TAG' sürümünü (Örn: v1.7) seçerek Run Workflow yapın!"
+          }
           
-          # Eğer sürüm 'v' ile başlamıyorsa başına 'v' ekle (Örn: 1.0.1 -> v1.0.1)
-          if (!$version.StartsWith("v")) { $version = "v$version" }
-          
-          Write-Host "Tespit edilen sürüm: $version"
-          # Sürüm numarasını sonraki adımlarda kullanmak üzere kaydet
-          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "İşlem yapılan Sürüm (Tag): $ref"
+          echo "TAG_NAME=$ref" >> $env:GITHUB_OUTPUT
 
-      # 3) AutoHotkey + Ahk2Exe indir
+      # 3) GitHub'da bu Release daha önce oluşturulmuş mu kontrol et
+      - name: Release Kontrolü
+        id: check_release
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.get_tag.outputs.TAG_NAME }}"
+          $repo = "${{ github.repository }}"
+          $url = "https://api.github.com/repos/$repo/releases/tags/$tag"
+          
+          try {
+            $response = Invoke-WebRequest -Uri $url -Method Get -Headers @{ "Authorization" = "token ${{ secrets.GITHUB_TOKEN }}" } -ErrorAction Stop
+            Write-Host "Release zaten mevcut. Başlık ve açıklama korunacak, sadece dosyalar güncellenir."
+            echo "EXISTS=true" >> $env:GITHUB_OUTPUT
+          } catch {
+            Write-Host "Release henüz bulunamadı. Yeni bir release oluşturulacak."
+            echo "EXISTS=false" >> $env:GITHUB_OUTPUT
+          }
+
+      # 4) AutoHotkey + Ahk2Exe indir
       - name: AutoHotkey ve Ahk2Exe İndir
         shell: pwsh
         run: |
@@ -51,13 +72,14 @@ jobs:
           Expand-Archive ahk.zip -DestinationPath ahk
           Expand-Archive compiler.zip -DestinationPath ahk
 
-      # 4) Derleme
+      # 5) Derleme
       - name: Derleme (x64 ve x32)
         shell: pwsh
         run: |
           $rootDir = Get-Location
-          $ahk_file = Join-Path $rootDir "src/AS Image Viewer.ahk"
-          $icon_file = Join-Path $rootDir "src/app_icon.ico"
+          
+          $ahk_file = Join-Path $rootDir $env:AHK_FILE_PATH
+          $icon_file = Join-Path $rootDir $env:ICON_FILE_PATH
           $distDir = Join-Path $rootDir "dist"
           
           $baseName = [System.IO.Path]::GetFileNameWithoutExtension($ahk_file)
@@ -90,17 +112,27 @@ jobs:
           Start-Sleep -Milliseconds 500
           if (!(Test-Path $target32)) { throw "x32 derleme başarısız!" }
 
-          Write-Host "=== dist klasörü içeriği ==="
           Get-ChildItem $distDir
 
-      # 5) version.txt'den gelen değere göre Release'i oluştur veya güncelle
-      - name: Release Güncelle veya Oluştur
+      # 6a) SENARYO 1: Release İLK DEFA oluşuyorsa (Otomatik Tag Push veya İlk Elle Oluşturma)
+      - name: Yeni Release Oluştur ve Dosyaları Yükle
+        if: steps.check_release.outputs.EXISTS == 'false'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.exe
-          tag_name: ${{ steps.get_version.outputs.VERSION }} # Dosyadan okunan dinamik tag adı
-          name: ${{ steps.get_version.outputs.VERSION }}     # Release başlığı (Örn: v1.0.0)
-          overwrite_files: true                              # Doğru parametre ismiyle güncellendi
-          body: "Derleme dosyaları otomatik olarak güncellendi."
+          tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+          name: ${{ steps.get_tag.outputs.TAG_NAME }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6b) SENARYO 2: Release ZATEN VARSA (Manuel tekrar tetikleme durumu)
+      - name: Mevcut Release İçeriğini Güncelle (Dosya Ekleme)
+        if: steps.check_release.outputs.EXISTS == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
