@@ -1,600 +1,905 @@
 /*
 ======================
 AS Image Viewer
-v1.6
-R47
-14/06/2025
+v1.7
+26/05/2026
 ======================
-This application is a minimalist image viewer that uses GDI+ for rendering,
-supports multiple image formats,
-and allows easy navigation and management through a simple GUI.
-
 Mesut Akcan
 makcan@gmail.com
 mesutakcan.blogspot.com
 github.com/mesutakcan
 youtube.com/mesutakcan
-
-What's new in v1.6:
-- Code improvements
-- Language support optimization
-- Spanish language support added
-- Added keyboard shortcuts to context menu
-
-TODO:
-- Paste image from clipboard
-- Rotate image
-- Rotate image based on EXIF orientation
-- Slideshow
-- Zoom to mouse cursor
-- Save settings
-- Add Menu Icons
 */
+
+;@Ahk2Exe-SetMainIcon app_icon.ico
+;@Ahk2Exe-ExeName AS Image Viewer.exe
+;@Ahk2Exe-SetName AS Image Viewer
+;@Ahk2Exe-Bin C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe
+;@Ahk2Exe-SetDescription A simple and fast image viewer
+;@Ahk2Exe-SetFileVersion 1.7
+;@Ahk2Exe-SetCompanyName akcanSoft
+;@Ahk2Exe-SetCopyright ©2026 Mesut Akcan
 
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 
-#Include "gdip_all.ahk" ; Load the GDI+ library
-#Include "langSupport.ahk" ; Load language support library
+#Include "gdip_all.ahk"
+#Include "langSupport.ahk"
 
-A_ScriptName := "AS Image Viewer v1.6"
+A_ScriptName := "AS Image Viewer v1.7"
 
-LoadLanguage() ; Load language strings
+LoadLanguage()
 
-; Start GDI+
 if !pToken := Gdip_Startup() {
-  MsgBox(lang["File_load_failed"], , "Icon! 4096")
-  ExitApp()
+	MsgBox(lang["File_load_failed"], , "Icon! 4096")
+	ExitApp()
 }
 
-extensions := "*.jpg; *.jpeg; *.png; *.gif; *.bmp; *.tif; *.ico; *.webp; *.wmf" ; Supported image file extensions
-dropFile := "" ; Dropped file
-DblClickTime := DllCall("GetDoubleClickTime", "UInt") ; Double click time
-imageFiles := [] ; Image files array
-imgFile := "" ; Image file
-currentFolder := "" ; Current folder
-lastIndex := 0 ; Last index
-imgNo := 0 ; Image number
+extensions := "*.jpg; *.jpeg; *.png; *.gif; *.bmp; *.tif; *.ico; *.webp; *.wmf"
+dropFile := ""
+DblClickTime := DllCall("GetDoubleClickTime", "UInt")
+imageFiles := []
+imgFile := ""
+currentFolder := ""
+lastIndex := 0
+imgNo := 0
+isClipboardImage := false
+settingsFile := A_ScriptDir "\settings.ini"
+centerImage := true
+windowX := 0
+windowY := 0
+windowPositionLoaded := false
 
-g := Gui("+OwnDialogs -Caption -Border +AlwaysOnTop -DPIScale") ; Create a GUI window
-; GUI events
-g.OnEvent("Close", GuiClose) ; Close event
-g.OnEvent("Size", GuiSize) ; Size event
-g.OnEvent("DropFiles", Gui_DropFiles) ; Drop files event
+g := Gui("+OwnDialogs -Caption -Border +AlwaysOnTop -DPIScale")
+g.OnEvent("Close", GuiClose)
+g.OnEvent("Size", GuiSize)
+g.OnEvent("DropFiles", Gui_DropFiles)
 
-CreateMenu() ; Create right-click menu
-OpenFile() ; openfile & loadimage
+CreateMenu()
+LoadSettings()
+OpenFile()
 
 #HotIf WinActive(g.Hwnd)
-Home:: LoadImageByMode("first") ; Home key
-Browser_Back:: ; Browser back key
-Left:: LoadImageByMode("prev") ; Left arrow key
-Browser_Forward:: ; Browser forward key
-Right:: LoadImageByMode("next") ; Right arrow key
-End:: LoadImageByMode("last") ; End key
-NumpadAdd:: ZoomImage(1) ; Numpad + key
-NumpadSub:: ZoomImage(-1) ; Numpad - key
-Numpad0:: ZoomImage(0) ; Numpad 0 key. Original size
-Numpad1:: ZoomImage(2) ; Numpad 2 key. Fit to screen
+Home:: LoadImageByMode("first")
+Browser_Back::
+Left:: LoadImageByMode("prev")
+Browser_Forward::
+Right:: LoadImageByMode("next")
+End:: LoadImageByMode("last")
+NumpadAdd:: ZoomImage(1)
+NumpadSub:: ZoomImage(-1)
+Numpad0:: ZoomImage(0)
+Numpad1:: ZoomImage(2)
+Delete:: DeleteCurrentImage()
 
-F1:: FileInfo() ; File info
-F2:: FileProperties() ; File properties
-F3:: ShowFileInFolder() ; Show file in folder
-F5:: ShowImage() ; Refresh
-^o:: OpenFile() ; Ctrl+o
-^c:: CopyImageToClipboard() ; Ctrl+c
-Esc:: ToolTip() ; Close tooltip
+F1:: FileInfo()
+F2:: FileProperties()
+F3:: ShowFileInFolder()
+F5:: ShowImage()
+^o:: OpenFile()
+^c:: CopyImageToClipboard()
+^v:: PasteImageFromClipboard()
+Esc:: ToolTip()
 
-#HotIf mouseIsOver(g.Hwnd) ; Mouse is over the GUI window
-Down:: ; Down arrow key
-RButton:: rcMenu.Show() ; right-click
-WheelUp:: ZoomImage(1) ; mouse wheel up
-WheelDown:: ZoomImage(-1) ; mouse wheel down
-XButton1:: LoadImageByMode("prev") ; 4th mouse button
-XButton2:: LoadImageByMode("next") ; 5th mouse button
-~MButton:: ; Middle mouse button
-~LButton:: HandleMouseClick() ; Left mouse button
+#HotIf mouseIsOver(g.Hwnd)
+Down::
+RButton:: rcMenu.Show()
+WheelUp:: ZoomImage(1)
+WheelDown:: ZoomImage(-1)
+XButton1:: LoadImageByMode("prev")
+XButton2:: LoadImageByMode("next")
+~MButton::
+~LButton:: HandleMouseClick()
 #HotIf
 
-; Hotkey to handle double-click events
 HandleMouseClick() {
-  if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime) {
-    switch A_ThisHotkey {
-      case "~MButton":
-        ZoomImage(2) ; Fit image to screen on middle double click
-      case "~LButton":
-        ZoomImage(0) ; Original size on left double click
-    }
-    return
-  }
-  if (A_ThisHotkey = "~LButton") {
-    MoveWindow()
-  }
+	if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < DblClickTime) {
+		switch A_ThisHotkey {
+			case "~MButton":
+				ZoomImage(2)
+			case "~LButton":
+				ZoomImage(0)
+		}
+		return
+	}
+	if (A_ThisHotkey = "~LButton") {
+		MoveWindow()
+	}
 }
 
-; Create right-click menu
 CreateMenu() {
-  global rcMenu, mnuTxt
+	global rcMenu, mnuTxt
 
-  imageres := A_WinDir "\system32\imageres.dll" ; icon file
-  shell32 := A_WinDir "\system32\shell32.dll" ; icon file
-  rcMenu := Menu() ; Right click menu
+	imageres := A_WinDir "\system32\imageres.dll"
+	shell32 := A_WinDir "\system32\shell32.dll"
+	rcMenu := Menu()
 
-  ; Right click menu items
-  mnuTxt := {
-    open: lang["Menu_open"] . "`tCtrl+O", ; Open image file
-    exit: lang["Menu_exit"] . "`tAlt+F4", ; Exit application
-    first: lang["Menu_first"] . "`tHome", ; First image
-    prev: lang["Menu_prev"] . "`tLeft", ; Previous image
-    next: lang["Menu_next"] . "`tRight", ; Next image
-    last: lang["Menu_last"] . "`tEnd", ; Last image
-    zoomin: lang["Menu_zoomin"] . "`tNumpad +", ; Zoom in
-    zoomout: lang["Menu_zoomout"] . "`tNumpad -", ; Zoom out
-    fit: lang["Menu_fit"] . "`tNumpad 1", ; Fit to screen
-    osize: lang["Menu_osize"] . "`tNumpad 0", ; Original size
-    refresh: lang["Menu_refresh"] . "`tF5", ; Refresh image
-    copy: lang["Menu_copy"] . "`tCtrl+C", ; Copy image
-    ; File info and properties
-    fileinfo: lang["Menu_fileinfo"] . "`tF1", ; File info
-    fileprop: lang["Menu_fileprop"] . "`tF2", ; File properties
-    fileinfolder: lang["Menu_fileinfolder"] . "`tF3", ; Show file in folder
+	mnuTxt := {
+		open: lang["Menu_open"] . "`tCtrl+O",
+		exit: lang["Menu_exit"] . "`tAlt+F4",
+		first: lang["Menu_first"] . "`tHome",
+		prev: lang["Menu_prev"] . "`tLeft",
+		next: lang["Menu_next"] . "`tRight",
+		last: lang["Menu_last"] . "`tEnd",
+		delete: lang["Menu_delete"] . "`tDel",
+		zoomin: lang["Menu_zoomin"] . "`tNumpad +",
+		zoomout: lang["Menu_zoomout"] . "`tNumpad -",
+		fit: lang["Menu_fit"] . "`tNumpad 1",
+		osize: lang["Menu_osize"] . "`tNumpad 0",
+		refresh: lang["Menu_refresh"] . "`tF5",
+		copy: lang["Menu_copy"] . "`tCtrl+C",
+		paste: lang["Menu_paste"] . "`tCtrl+V",
+		fileinfo: lang["Menu_fileinfo"] . "`tF1",
+		fileprop: lang["Menu_fileprop"] . "`tF2",
+		fileinfolder: lang["Menu_fileinfolder"] . "`tF3",
+		aot: lang["Menu_aot"],
+		border: lang["Menu_border"],
+		center: lang["Menu_center"],
+		shortcuts: lang["Menu_shortcuts"],
+		about: lang["Menu_about"]
+	}
 
-    aot: lang["Menu_aot"], ; Always on top
-    border: lang["Menu_border"], ; Window border
-    shortcuts: lang["Menu_shortcuts"], ; Shortcuts
-    about: lang["Menu_about"] ; About dialog
-  }
+	menuItems := [{ text: mnuTxt.open, iconFile: imageres, iconNo: 195 }, { text: mnuTxt.exit, iconFile: imageres, iconNo: 94 }, { separator: true }, { text: mnuTxt.first }, { text: mnuTxt.prev }, { text: mnuTxt.next, iconFile: shell32, iconNo: 298 }, { text: mnuTxt.last }, { separator: true }, { text: mnuTxt.delete, iconFile: shell32, iconNo: 63 }, { separator: true }, { text: mnuTxt.zoomin }, { text: mnuTxt.zoomout }, { text: mnuTxt.fit, iconFile: shell32, iconNo: 16 }, { text: mnuTxt.osize }, { separator: true }, { text: mnuTxt.refresh, iconFile: imageres, iconNo: 230 }, { text: mnuTxt.copy, iconFile: shell32, iconNo: 135 }, { text: mnuTxt.paste, iconFile: shell32, iconNo: 261 }, { separator: true }, { text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 }, { text: mnuTxt.fileprop, iconFile: shell32, iconNo: 283 }, { text: mnuTxt.fileinfolder, iconFile: shell32, iconNo: 267 }, { separator: true }, { text: mnuTxt.aot, check: true }, { text: mnuTxt.border }, { text: mnuTxt.center, check: true }, { separator: true }, { text: mnuTxt.shortcuts, iconFile: shell32, iconNo: 30 }, { text: mnuTxt.about, iconFile: shell32, iconNo: 155 }
+	]
 
-  ; Menu items array with text, icon file, and icon number
-  menuItems := [{ text: mnuTxt.open, iconFile: imageres, iconNo: 195 }, ; Open
-    { text: mnuTxt.exit, iconFile: imageres, iconNo: 94 }, ; Exit
-    { separator: true }, ; Separator
-    { text: mnuTxt.first }, ; First image
-    { text: mnuTxt.prev }, ; Previous image
-    { text: mnuTxt.next, iconFile: shell32, iconNo: 298 }, ; Next image
-    { text: mnuTxt.last }, ; Last image
-    { separator: true }, ; Separator
-    { text: mnuTxt.zoomin }, ; Zoom in
-    { text: mnuTxt.zoomout }, ; Zoom out
-    { text: mnuTxt.fit , iconFile: shell32, iconNo: 16 }, ; Fit to screen
-    { text: mnuTxt.osize }, ; Original size
-    { separator: true }, ; Separator
-    { text: mnuTxt.refresh, iconFile: shell32, iconNo: 239 }, ; Refresh
-    { text: mnuTxt.copy, iconFile: shell32, iconNo: 135 }, ; Copy
-    { separator: true }, ; Separator
-    { text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 }, ; File info
-    { text: mnuTxt.fileprop }, ; File properties
-    { text: mnuTxt.fileinfolder, iconFile: shell32, iconNo: 267 }, ; Show file in folder
-    { separator: true }, ; Separator
-    { text: mnuTxt.aot, check: true }, ; Always on top
-    { text: mnuTxt.border}, ; Window border -- iconFile: shell32, iconNo: 98
-    { separator: true }, ; Separator
-    { text: mnuTxt.shortcuts , iconFile: shell32, iconNo: 30 }, ; Shortcuts
-    { text: mnuTxt.about, iconFile: shell32, iconNo: 155 } ; About
-  ]
-
-  ; Add menu items to the right-click menu
-  for index, item in menuItems {
-    ; Check if the item has a separator property
-    if (item.HasOwnProp("separator")) {
-      rcMenu.Add() ; add separator
-      continue ; skip to the next item
-    }
-    ; Add the item to the right-click menu
-    rcMenu.Add(item.text, menuHandler)
-    ; Check if the item has an icon file and icon number
-    if (item.HasOwnProp("iconFile") && item.HasOwnProp("iconNo")) {
-      ; Set the icon for the item
-      rcMenu.SetIcon(item.text, item.iconFile, item.iconNo)
-    }
-    ; Check if the item has a check property and if it is true
-    if (item.HasOwnProp("check") && item.check) {
-      rcMenu.Check(item.text)
-    }
-  }
+	for index, item in menuItems {
+		if (item.HasOwnProp("separator")) {
+			rcMenu.Add()
+			continue
+		}
+		rcMenu.Add(item.text, menuHandler)
+		if (item.HasOwnProp("iconFile") && item.HasOwnProp("iconNo")) {
+			rcMenu.SetIcon(item.text, item.iconFile, item.iconNo)
+		}
+		if (item.HasOwnProp("check") && item.check) {
+			rcMenu.Check(item.text)
+		}
+	}
 }
 
-; Menu handler function for right-click menu items
 menuHandler(item, *) {
-  global mnuTxt
-  switch item {
-    case mnuTxt.open: OpenFile()
-    case mnuTxt.exit: GuiClose()
-    case mnuTxt.first: LoadImageByMode("first")
-    case mnuTxt.prev: LoadImageByMode("prev")
-    case mnuTxt.next: LoadImageByMode("next")
-    case mnuTxt.last: LoadImageByMode("last")
-    case mnuTxt.zoomin: ZoomImage(1)
-    case mnuTxt.zoomout: ZoomImage(-1)
-    case mnuTxt.fit: ZoomImage(2)
-    case mnuTxt.osize: ZoomImage(0)
-    case mnuTxt.refresh: ShowImage()
-    case mnuTxt.copy: CopyImageToClipboard()
-    case mnuTxt.fileinfo: FileInfo()
-    case mnuTxt.fileprop: FileProperties()
-    case mnuTxt.fileinfolder: ShowFileInFolder()
-    case mnuTxt.aot: toggleAOT()
-    case mnuTxt.border: toggleBorder()
-    case mnuTxt.shortcuts: Shortcuts()
-    case mnuTxt.about: About()
-  }
+	global mnuTxt
+	switch item {
+		case mnuTxt.open: OpenFile()
+		case mnuTxt.exit: GuiClose()
+		case mnuTxt.first: LoadImageByMode("first")
+		case mnuTxt.prev: LoadImageByMode("prev")
+		case mnuTxt.next: LoadImageByMode("next")
+		case mnuTxt.last: LoadImageByMode("last")
+		case mnuTxt.delete: DeleteCurrentImage()
+		case mnuTxt.zoomin: ZoomImage(1)
+		case mnuTxt.zoomout: ZoomImage(-1)
+		case mnuTxt.fit: ZoomImage(2)
+		case mnuTxt.osize: ZoomImage(0)
+		case mnuTxt.refresh: ShowImage()
+		case mnuTxt.copy: CopyImageToClipboard()
+		case mnuTxt.paste: PasteImageFromClipboard()
+		case mnuTxt.fileinfo: FileInfo()
+		case mnuTxt.fileprop: FileProperties()
+		case mnuTxt.fileinfolder: ShowFileInFolder()
+		case mnuTxt.aot: toggleAOT()
+		case mnuTxt.border: toggleBorder()
+		case mnuTxt.center: toggleCenterImage()
+		case mnuTxt.shortcuts: Shortcuts()
+		case mnuTxt.about: About()
+	}
 }
 
-; Open image file
+LoadSettings() {
+	global settingsFile, rcMenu, mnuTxt, g, currentFolder, centerImage, windowX, windowY, windowPositionLoaded
+
+	; Always on Top setting
+	aotSetting := IniRead(settingsFile, "Settings", "AlwaysOnTop", "1")
+	if (aotSetting = "0") {
+		WinSetAlwaysOnTop(0, g)
+		rcMenu.Uncheck(mnuTxt.aot)
+	}
+
+	; Window Border setting
+	borderSetting := IniRead(settingsFile, "Settings", "WindowBorder", "0")
+	if (borderSetting = "1") {
+		WinSetStyle("+0x800000", g)
+		rcMenu.Check(mnuTxt.border)
+	}
+
+	; Center image setting
+	centerImage := IniRead(settingsFile, "Settings", "CenterImage", "1") != "0"
+	if !centerImage
+		rcMenu.Uncheck(mnuTxt.center)
+
+	; Last window position
+	savedWindowX := IniRead(settingsFile, "Settings", "WindowX", "")
+	savedWindowY := IniRead(settingsFile, "Settings", "WindowY", "")
+	if (RegExMatch(savedWindowX, "^-?\d+$") && RegExMatch(savedWindowY, "^-?\d+$")) {
+		windowX := Integer(savedWindowX)
+		windowY := Integer(savedWindowY)
+		windowPositionLoaded := true
+	}
+
+	; Last folder setting
+	currentFolder := IniRead(settingsFile, "Settings", "LastFolder", A_MyDocuments)
+	if !DirExist(currentFolder)
+		currentFolder := A_MyDocuments
+}
+
+SaveSettings() {
+	global settingsFile, currentFolder, g, centerImage
+
+	; Save Always on Top setting
+	try
+		IniWrite((WinGetExStyle(g) & 0x8) ? "1" : "0", settingsFile, "Settings", "AlwaysOnTop")
+	catch
+		IniWrite("1", settingsFile, "Settings", "AlwaysOnTop")
+
+	; Save Window Border setting
+	try
+		IniWrite((WinGetStyle(g) & 0x800000) ? "1" : "0", settingsFile, "Settings", "WindowBorder")
+	catch
+		IniWrite("0", settingsFile, "Settings", "WindowBorder")
+
+	; Save center image setting
+	IniWrite(centerImage ? "1" : "0", settingsFile, "Settings", "CenterImage")
+
+	; Save last window position
+	try {
+		WinGetPos(&x, &y, , , g)
+		IniWrite(x, settingsFile, "Settings", "WindowX")
+		IniWrite(y, settingsFile, "Settings", "WindowY")
+	}
+
+	; Save last folder
+	if (currentFolder != "" && DirExist(currentFolder))
+		IniWrite(currentFolder, settingsFile, "Settings", "LastFolder")
+}
+
 OpenFile() {
-  global bitmap, extensions
-  ; Get the file path from args, dropped file, or file dialog
-  iFile := GetImageFilePath()
-  if !iFile { ; Check if the file path is empty
-    MsgBox(lang["File_nofile"], , "Icon! 4096")
-    if !IsSet(bitmap)
-      ExitApp()
-    return
-  }
+	global bitmap, extensions
+	iFile := GetImageFilePath()
+	if !iFile {
+		if !IsSet(bitmap) {
+			MsgBox(lang["File_nofile"], , "Icon! 4096")
+			ExitApp()
+		}
+		return
+	}
 
-  SplitPath iFile, , , &ext ; Split the file path into extension
-  ; Validate the image file
-  if !ext || !InStr(extensions, ext) || !FileExist(iFile) {
-    MsgBox(lang["File_invalid_file"] ":`n" iFile, , "Icon! 4096")
-    return
-  }
-  LoadImageFromFile(iFile) ;Load the image from the file
+	SplitPath iFile, , , &ext
+	if !ext || !InStr(extensions, ext) || !FileExist(iFile) {
+		MsgBox(lang["File_invalid_file"] ":`n" iFile, , "Icon! 4096")
+		return
+	}
+	LoadImageFromFile(iFile)
 }
 
-; Get the image file path from the command line arguments, dropped file, or file dialog
 GetImageFilePath() {
-  static argsUsed := false
-  global dropFile, extensions
-  if !argsUsed && A_Args.Length > 0 { ; Command line arguments
-    argsUsed := true
-    return A_Args[1] ; Return the first command line argument
-  }
-  if dropFile { ; Dropped file
-    dFile := dropFile ; Dropped file path
-    dropFile := "" ; Clear the dropFile variable
-    return dFile ; Return the dropped file path
-  }
-  g.Opt("+OwnDialogs")
-  return FileSelect(, , lang["File_select_image_file"], "Images (" extensions ")")
+	static argsUsed := false
+	global dropFile, extensions, currentFolder
+	if !argsUsed && A_Args.Length > 0 {
+		argsUsed := true
+		return A_Args[1]
+	}
+	if dropFile {
+		dFile := dropFile
+		dropFile := ""
+		return dFile
+	}
+	g.Opt("+OwnDialogs")
+
+	startFolder := (currentFolder != "" && DirExist(currentFolder)) ? currentFolder : ""
+
+	return FileSelect(, startFolder, lang["File_select_image_file"], "Images (" extensions ")")
 }
 
-; Load the image from the specified file
 LoadImageFromFile(lFile) {
-  global imageFiles, currentFolder, imageFiles, lastIndex, imgNo
-  SplitPath lFile, , &folder
-  ; Check if the folder has changed or the imageFiles array is empty
-  if (folder != currentFolder || imageFiles.Length = 0) {
-    imageFiles := GetImageFilesInFolder(folder) ; Get all image files in the folder
-    currentFolder := folder ; Update the current folder
-    lastIndex := 0 ; Reset lastIndex when folder changes
-  }
+	global imageFiles, currentFolder, lastIndex, imgNo, isClipboardImage
+	isClipboardImage := false
+	SplitPath lFile, , &folder
+	if (folder != currentFolder || imageFiles.Length = 0) {
+		imageFiles := GetImageFilesInFolder(folder)
+		currentFolder := folder
+		lastIndex := 0
+	}
 
-  imgNo := getArrayValueIndex(lFile) ; Get the index of the file in the imageFiles array
-  imgFile := lFile ; Set the image file
-  LoadImage(imgNo) ; Load the image
+	imgNo := getArrayValueIndex(lFile)
+	imgFile := lFile
+	LoadImage(imgNo)
 }
 
-; Get all image files in the specified folder
 GetImageFilesInFolder(folder) {
-  global extensions
-  files := [] ; Array to store image files
-  Loop Files, folder "\*.*" { ; Loop through all files in the folder
-    if InStr(extensions, A_LoopFileExt) ; Check if the file extension is supported
-      files.Push(A_LoopFileFullPath) ; Add the file to the array
-  }
-  return files ; Return the array of image files
+	global extensions
+	files := []
+	Loop Files, folder "\*.*" {
+		if InStr(extensions, A_LoopFileExt)
+			files.Push(A_LoopFileFullPath)
+	}
+	return files
 }
 
-; Image loading function
 LoadImage(index) {
-  global
-  imgFile := imageFiles[index] ; Get the image file path
+	global
+	if (index < 1 || index > imageFiles.Length) {
+		MsgBox(lang["File_invalid_file"], , "Icon! 4096")
+		return
+	}
 
-  ; Check if the index is the same as the last loaded index
-  if (index = lastIndex) {
-    return
-  }
+	imgFile := imageFiles[index]
 
-  bitmap := Gdip_CreateBitmapFromFile(imgFile) ; Load the image file
-  if !bitmap { ; Check if the image file failed to load
-    MsgBox "Failed to load image file: " imgFile, , "Icon! 4096"
-    return
-  }
+	if (index = lastIndex) {
+		return
+	}
 
-  lastIndex := index ; Update the last index
+	; Try loading image from memory stream to avoid locking the file on disk
+	newBitmap := CreateBitmapFromFileMemory(imgFile)
+	if !IsValidBitmap(newBitmap)
+		newBitmap := Gdip_CreateBitmapFromFile(imgFile)
+	if !IsValidBitmap(newBitmap) {
+		MsgBox(lang["Error_load_failed_msg"] " " imgFile, , "Icon! 4096")
+		return
+	}
 
-  ; Get image dimensions
-  originalWidth := Gdip_GetImageWidth(bitmap)
-  originalHeight := Gdip_GetImageHeight(bitmap)
+	; Clone the bitmap into a new GDI+ bitmap to ensure no underlying file handles remain
+	try {
+		cloned := CloneBitmap(newBitmap)
+		if cloned {
+			SafeDisposeBitmap(&newBitmap)
+			newBitmap := cloned
+		}
+	} catch {
+		; If cloning fails, keep original bitmap
+	}
 
-  ; Check if the image is larger than the screen
-  if (originalWidth > A_ScreenWidth || originalHeight > A_ScreenHeight) {
-    ZoomImage(2) ; Fit to screen
-    return
-  }
-  else {
-    imgWidth := originalWidth ; Set the image width
-    imgHeight := originalHeight ; Set the image height
-    zoomFactor := 1 ; Reset the zoom factor
-  }
-  ShowGui() ; Show the image on the GUI
+	SafeDisposeBitmap(&bitmap)
+	bitmap := newBitmap
+	lastIndex := index
+
+	originalWidth := Gdip_GetImageWidth(bitmap)
+	originalHeight := Gdip_GetImageHeight(bitmap)
+
+	if (originalWidth > A_ScreenWidth || originalHeight > A_ScreenHeight) {
+		ZoomImage(2)
+		return
+	}
+	else {
+		imgWidth := originalWidth
+		imgHeight := originalHeight
+		zoomFactor := 1
+	}
+	ShowGui()
 }
 
-; Load the first, last, next, or previous image based on the mode
+CreateBitmapFromFileMemory(sFile) {
+	; Create a GDI+ bitmap from a file's raw bytes to avoid keeping the file handle open
+	if !FileExist(sFile)
+		return 0
+
+	; Open file for read
+	hFile := DllCall("Kernel32\CreateFileW", "WStr", sFile, "UInt", 0x80000000, "UInt", 3, "Ptr", 0, "UInt", 3, "UInt", 0x80, "Ptr", 0, "Ptr")
+	if (hFile = -1 || hFile = 0)
+		return 0
+
+	if !DllCall("Kernel32\GetFileSizeEx", "Ptr", hFile, "Int64*", &size := 0) {
+		DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+		return 0
+	}
+	if (size = 0) {
+		DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+		return 0
+	}
+
+	; Allocate global memory and read file contents into it
+	hMem := DllCall("GlobalAlloc", "UInt", 2, "Ptr", size, "Ptr")
+	pData := DllCall("GlobalLock", "Ptr", hMem, "Ptr")
+	if (!hMem || !pData) {
+		if pData
+			DllCall("GlobalUnlock", "Ptr", hMem)
+		if hMem
+			DllCall("GlobalFree", "Ptr", hMem)
+		DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+		return 0
+	}
+	if !DllCall("Kernel32\ReadFile", "Ptr", hFile, "Ptr", pData, "UInt", size, "UInt*", &bytesRead := 0, "Ptr", 0) {
+		DllCall("GlobalUnlock", "Ptr", hMem)
+		DllCall("GlobalFree", "Ptr", hMem)
+		DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+		return 0
+	}
+	if (bytesRead != size) {
+		DllCall("GlobalUnlock", "Ptr", hMem)
+		DllCall("GlobalFree", "Ptr", hMem)
+		DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+		return 0
+	}
+	DllCall("GlobalUnlock", "Ptr", hMem)
+	DllCall("Kernel32\CloseHandle", "Ptr", hFile)
+
+	; Create an IStream on the HGLOBAL and make a bitmap from it
+	if !(DllCall("Ole32.dll\CreateStreamOnHGlobal", "Ptr", hMem, "Int", 1, "Ptr*", &pStream := 0)) {
+		DllCall("GlobalFree", "Ptr", hMem)
+		return 0
+	}
+
+	status := DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "UPtr", pStream, "Ptr*", &pBitmap := 0)
+	ObjRelease(pStream)
+
+	return (status = 0 && pBitmap) ? pBitmap : 0
+}
+
+IsValidBitmap(pBitmap) {
+	if !IsSet(pBitmap) || pBitmap <= 0
+		return false
+	try {
+		DllCall("gdiplus\GdipGetImageWidth", "UPtr", pBitmap, "UInt*", &width := 0)
+		DllCall("gdiplus\GdipGetImageHeight", "UPtr", pBitmap, "UInt*", &height := 0)
+		return width > 0 && height > 0
+	} catch {
+		return false
+	}
+}
+
+SafeDisposeBitmap(&pBitmap) {
+	if IsSet(pBitmap) && pBitmap > 0 {
+		try Gdip_DisposeImage(pBitmap)
+		pBitmap := 0
+	}
+}
+
+CloneBitmap(pSrcBitmap) {
+	if !IsValidBitmap(pSrcBitmap)
+		return 0
+	w := Gdip_GetImageWidth(pSrcBitmap)
+	h := Gdip_GetImageHeight(pSrcBitmap)
+	if (w <= 0 || h <= 0)
+		return 0
+
+	pNew := Gdip_CreateBitmap(w, h)
+	if !pNew
+		return 0
+
+	G := Gdip_GraphicsFromImage(pNew)
+	if !G {
+		Gdip_DisposeImage(pNew)
+		return 0
+	}
+
+	; Draw source into new bitmap
+	Gdip_DrawImage(G, pSrcBitmap, 0, 0, w, h)
+	Gdip_DeleteGraphics(G)
+
+	return pNew
+}
+
 LoadImageByMode(mode) {
-  global imgNo, imageFiles
-  switch mode {
-    case "first": imgNo := 1 ; Load the first image
-    case "last": imgNo := imageFiles.Length ; Load the last image
-    case "next": ; Next image
-      imgNo++ ; Increment the image number
-      if (imgNo > imageFiles.Length)
-        imgNo := 1 ; Reset the image number
-    case "prev": ; Previous image
-      imgNo-- ; Decrement the image number
-      if (imgNo < 1)
-        imgNo := imageFiles.Length ; Reset the image number
-  }
-  LoadImage(imgNo) ; Load the image
+	global imgNo, imageFiles, isClipboardImage
+
+	if isClipboardImage {
+		isClipboardImage := false
+	}
+
+	switch mode {
+		case "first": imgNo := 1
+		case "last": imgNo := imageFiles.Length
+		case "next":
+			imgNo++
+			if (imgNo > imageFiles.Length)
+				imgNo := 1
+		case "prev":
+			imgNo--
+			if (imgNo < 1)
+				imgNo := imageFiles.Length
+	}
+	LoadImage(imgNo)
 }
 
-; Show the image on the GUI
 ShowImage(*) {
-  global
-  ToolTip() ; Close tooltip
-  local hDC := DllCall("GetDC", "Ptr", g.Hwnd, "Ptr") ; Get the device context of the GUI window
-  local GG := Gdip_GraphicsFromHDC(hDC) ; Create a graphics object from the device context
-  ;Gdip_GraphicsClear(GG, 0xFFF0F0F0)
-  Gdip_DrawImage(GG, bitmap, 0, 0, imgWidth, imgHeight) ; Draw the image on the graphics object
-  Gdip_DeleteGraphics(GG) ; Delete the graphics object
-  DllCall("ReleaseDC", "Ptr", g.Hwnd, "Ptr", hDC) ; Release the device context
+	global
+	if !IsSet(bitmap) || !IsValidBitmap(bitmap)
+		return
+	ToolTip()
+	local hDC := DllCall("GetDC", "Ptr", g.Hwnd, "Ptr")
+	local GG := Gdip_GraphicsFromHDC(hDC)
+	Gdip_DrawImage(GG, bitmap, 0, 0, imgWidth, imgHeight)
+	Gdip_DeleteGraphics(GG)
+	DllCall("ReleaseDC", "Ptr", g.Hwnd, "Ptr", hDC)
 }
 
 ZoomImage(zoomMode) {
-  global
-  static prevZoomFactor := 1
+	global
+	static prevZoomFactor := 1
 
-  switch zoomMode {
-    case 0: zoomFactor := 1 ; Original size
-    case 1: zoomFactor += 0.1 ; Zoom in
-    case -1: zoomFactor -= 0.1 ; Zoom out
-    case 2: ; Fit to screen
-      local imgAspectRatio := originalWidth / originalHeight
-      ; Determine the zoom factor based on the aspect ratio
-      if (imgAspectRatio > (A_ScreenWidth / A_ScreenHeight)) {
-        zoomFactor := A_ScreenWidth / originalWidth
-      } else {
-        zoomFactor := A_ScreenHeight / originalHeight
-      }
-  }
+	switch zoomMode {
+		case 0: zoomFactor := 1
+		case 1: zoomFactor += 0.1
+		case -1: zoomFactor -= 0.1
+		case 2:
+			local mNo := GetActiveMonitor()
+			local mWidth := A_ScreenWidth
+			local mHeight := A_ScreenHeight
+			try {
+				MonitorGet(mNo, &mLeft, &mTop, &mRight, &mBottom)
+				mWidth := mRight - mLeft
+				mHeight := mBottom - mTop
+			}
+			local imgAspectRatio := originalWidth / originalHeight
+			if (imgAspectRatio > (mWidth / mHeight)) {
+				zoomFactor := mWidth / originalWidth
+			} else {
+				zoomFactor := mHeight / originalHeight
+			}
+	}
 
-  ; Ensure zoomFactor is within reasonable bounds
-  if (zoomFactor < 0.1) ; Minimum zoom factor
-    zoomFactor := prevZoomFactor
-  else
-    prevZoomFactor := zoomFactor
+	if (zoomFactor < 0.1)
+		zoomFactor := prevZoomFactor
+	else
+		prevZoomFactor := zoomFactor
 
-  ; Update image dimensions
-  imgWidth := Round(originalWidth * zoomFactor)
-  imgHeight := Round(originalHeight * zoomFactor)
-  ShowGui() ; Show the image on the GUI
+	imgWidth := Round(originalWidth * zoomFactor)
+	imgHeight := Round(originalHeight * zoomFactor)
+	ShowGui()
 }
 
-; Toggle Always On Top
 toggleAOT(*) {
-  global rcMenu, mnuTxt, g
-  rcMenu.ToggleCheck(mnuTxt.aot) ; Toggle the checkmark
-  WinSetAlwaysOnTop(-1, g) ; toggle aot
+	global rcMenu, mnuTxt, g
+	rcMenu.ToggleCheck(mnuTxt.aot)
+	WinSetAlwaysOnTop(-1, g)
 }
 
-; Toggle Window Border
 toggleBorder(*) {
-  global rcMenu, mnuTxt, g
-  rcMenu.ToggleCheck(mnuTxt.border) ; Toggle the checkmark
-  WinSetStyle("^0x800000", g) ; toggle border
-  g.Show()
+	global rcMenu, mnuTxt, g
+	rcMenu.ToggleCheck(mnuTxt.border)
+	WinSetStyle("^0x800000", g)
+	g.Show()
 }
 
-; Displays the GUI window with specified dimensions and positioning.
+toggleCenterImage(*) {
+	global centerImage, rcMenu, mnuTxt
+	centerImage := !centerImage
+	rcMenu.ToggleCheck(mnuTxt.center)
+	if centerImage
+		ShowGui()
+}
+
 ShowGui() {
-  global imgWidth, imgHeight, g
-  g.Show("w0")
-  local sizeTxt := "w" imgWidth " h" imgHeight
-  if imgWidth > A_ScreenWidth || imgHeight > A_ScreenHeight
-    g.Show(sizeTxt)
-  else
-    g.Show(sizeTxt " Center")
+	global imgWidth, imgHeight, g, centerImage, windowX, windowY, windowPositionLoaded
+	local sizeTxt := "w" imgWidth " h" imgHeight
+
+	if centerImage {
+		g.Show("w0")
+		g.Show(sizeTxt " Center")
+		return
+	}
+
+	if DllCall("IsWindowVisible", "Ptr", g.Hwnd) {
+		WinGetPos(&x, &y, , , g)
+	} else {
+		x := windowPositionLoaded ? windowX : 0
+		y := windowPositionLoaded ? windowY : 0
+		if !IsWindowPositionOnScreen(x, y) {
+			x := 0
+			y := 0
+		}
+	}
+
+	local posTxt := " x" x " y" y
+	g.Show("w0" posTxt)
+	g.Show(sizeTxt posTxt)
 }
 
-; Function to get the index of a value in the imageFiles array
+IsWindowPositionOnScreen(x, y) {
+	try {
+		Loop MonitorGetCount() {
+			MonitorGet(A_Index, &left, &top, &right, &bottom)
+			if (x >= left && x < right && y >= top && y < bottom)
+				return true
+		}
+	} catch {
+		return (x >= 0 && x < A_ScreenWidth && y >= 0 && y < A_ScreenHeight)
+	}
+	return false
+}
+
+GetActiveMonitor() {
+	global g
+	if !DllCall("IsWindowVisible", "Ptr", g.Hwnd)
+		return 1
+	WinGetPos(&wx, &wy, &ww, &wh, g)
+	centerX := wx + ww / 2
+	centerY := wy + wh / 2
+	try {
+		Loop MonitorGetCount() {
+			MonitorGet(A_Index, &left, &top, &right, &bottom)
+			if (centerX >= left && centerX < right && centerY >= top && centerY < bottom)
+				return A_Index
+		}
+	}
+	return 1
+}
+
 getArrayValueIndex(val) {
-  global imageFiles
-  Loop imageFiles.Length { ; Loop through the imageFiles array
-    if (imageFiles[A_Index] = val) ; Check if the value matches the current index
-      return A_Index ; Return the index
-  }
+	global imageFiles
+	Loop imageFiles.Length {
+		if (imageFiles[A_Index] = val)
+			return A_Index
+	}
 }
 
-; Function to check if the mouse cursor is over the GUI window
 mouseIsOver(windowIdentifier) {
-  MouseGetPos(, , &winHwnd)
-  return (winHwnd = windowIdentifier)
+	MouseGetPos(, , &winHwnd)
+	return (winHwnd = windowIdentifier)
 }
 
-; Function to handle GUI resizing events
 GuiSize(gui, minMax, width, height) {
-  if (minMax = 0) { ; 0 = Restored from minimized state
-    ShowImage()
-  }
+	if (minMax = 0) {
+		ShowImage()
+	}
 }
 
-; Clean up GDI+ resources when Gui is closed
 GuiClose(*) {
-  global bitmap, pToken
-  Gdip_DisposeImage(bitmap) ; Dispose of the image
-  Gdip_Shutdown(pToken) ; Shutdown GDI+
-  ExitApp() ; Exit the application
+	global bitmap, pToken
+	SaveSettings()
+	SafeDisposeBitmap(&bitmap)
+	Gdip_Shutdown(pToken)
+	ExitApp()
 }
 
-; Show the image file in the folder
 ShowFileInFolder() {
-  global imgFile
-  Run('explorer.exe /select,"' imgFile '"') ; Show the file in the folder
-  ;Sleep(1000) ; Wait for the window to open
-  WinWait("ahk_class CabinetWClass") ; Wait for the window to appear
-  WinActivate("ahk_class CabinetWClass") ; Activate the window
-  WinSetAlwaysOnTop(, "A") ; Set the window to always on top
+	global imgFile, isClipboardImage
+
+	if isClipboardImage {
+		MsgBox(lang["File_clipboard_image"], , "Icon! 4096")
+		return
+	}
+
+	Run('explorer.exe /select,"' imgFile '"')
+	WinWait("ahk_class CabinetWClass")
+	WinActivate("ahk_class CabinetWClass")
+	WinSetAlwaysOnTop(, "A")
 }
 
-; Image file info
+DeleteCurrentImage() {
+	global imgFile, isClipboardImage, imageFiles, imgNo, bitmap, lastIndex, g
+
+	; Image pasted from clipboard cannot be deleted
+	if isClipboardImage {
+		MsgBox(lang["File_clipboard_image"], , "Icon! 4096")
+		return
+	}
+
+	; Deletion confirmation
+	result := MsgBox(lang["File_delete_confirm"] "`n`n" imgFile,
+		lang["File_delete_title"], "YesNo Icon! 4096")
+
+	if (result != "Yes")
+		return
+
+	fileToDelete := imgFile
+	; Hide GUI and release bitmap
+	g.Hide()
+	SafeDisposeBitmap(&bitmap)
+	Sleep(100)  ; Short wait for GDI+
+
+	; Send file to recycle bin
+	try {
+		FileRecycle(fileToDelete)
+
+		; Deletion successful - remove from list and move to next image
+		imageFiles.RemoveAt(imgNo)
+		lastIndex := 0
+
+		if (imageFiles.Length > 0) {
+			if (imgNo > imageFiles.Length)
+				imgNo := imageFiles.Length
+			; If the current image was the last one, load the new last image
+			; Otherwise, load the image at the current index (which is now the next image)
+			LoadImage(imgNo)
+		} else {
+			GuiClose()
+		}
+
+	} catch as err {
+		; Deletion failed - show error message
+		errorMsg := lang["File_delete_error_msg"] "`n" fileToDelete "`n`n"
+		errorMsg .= lang["File_delete_error_reasons"] "`n"
+		errorMsg .= lang["File_delete_error_in_use"] "`n"
+		errorMsg .= lang["File_delete_error_readonly"] "`n"
+		errorMsg .= lang["File_delete_error_no_permission"] "`n`n"
+		errorMsg .= lang["File_delete_error_label"] " " err.Message
+
+		MsgBox(errorMsg, lang["File_delete_error_title"], "Icon! 16")
+
+		; Reload image in case of error
+		LoadImage(imgNo)
+	}
+}
+
 FileInfo() {
-  global imgFile, originalWidth, originalHeight, imgWidth, imgHeight
-  SplitPath(imgFile, &file, &dir) ; Split the image file path into file and directory
-  mfd := FileDT("M") ; Modification time
-  cfd := FileDT("C") ; Creation time
-  afd := FileDT("A") ; Last Access time
-  fsize := FileGetSize(imgFile) ; File size
-  fs := FormatByteSize(fsize) " (" RegExReplace(fsize, "(\d)(?=(\d{3})+(?!\d))", "$1.") " bytes)" ; File size
-  m := lang["FileInfo_folder"] ": " dir "`n" ; Tooltip message
-  m .= lang["FileInfo_file"] ": " file "`n"
-  m .= lang["FileInfo_mod_time"] ": " mfd "`n"
-  m .= lang["FileInfo_create_time"] ": " cfd "`n"
-  m .= lang["FileInfo_access_time"] ": " afd "`n"
-  m .= lang["FileInfo_orig_size"] ": " originalWidth "x" originalHeight "`n"
-  m .= lang["FileInfo_disp_size"] ": " imgWidth "x" imgHeight "`n"
-  m .= lang["FileInfo_file_size"] ": " fs
-  CoordMode("ToolTip", "Screen")
-  WinGetPos(&x, &y, , , g)
-  tX := Max(0, x) ; Tooltip x pos
-  tY := Max(0, y) ; Tooltip y pos
-  ToolTip(m, tX + 5, tY + 5)
+	global imgFile, originalWidth, originalHeight, imgWidth, imgHeight, isClipboardImage
+
+	if isClipboardImage {
+		m := lang["FileInfo_source"] ": " lang["FileInfo_clipboard"] "`n"
+		m .= lang["FileInfo_orig_size"] ": " originalWidth "x" originalHeight "`n"
+		m .= lang["FileInfo_disp_size"] ": " imgWidth "x" imgHeight
+	}
+	else {
+		SplitPath(imgFile, &file, &dir)
+		mfd := FileDT("M")
+		cfd := FileDT("C")
+		afd := FileDT("A")
+		try {
+			fsize := FileGetSize(imgFile)
+			fs := FormatByteSize(fsize) " (" RegExReplace(fsize, "(\d)(?=(\d{3})+(?!\d))", "$1.") " bytes)"
+		} catch {
+			fs := "N/A"
+		}
+		m := lang["FileInfo_folder"] ": " dir "`n"
+		m .= lang["FileInfo_file"] ": " file "`n"
+		m .= lang["FileInfo_mod_time"] ": " mfd "`n"
+		m .= lang["FileInfo_create_time"] ": " cfd "`n"
+		m .= lang["FileInfo_access_time"] ": " afd "`n"
+		m .= lang["FileInfo_orig_size"] ": " originalWidth "x" originalHeight "`n"
+		m .= lang["FileInfo_disp_size"] ": " imgWidth "x" imgHeight "`n"
+		m .= lang["FileInfo_file_size"] ": " fs
+	}
+
+	CoordMode("ToolTip", "Screen")
+	WinGetPos(&x, &y, , , g)
+	tX := Max(0, x)
+	tY := Max(0, y)
+	ToolTip(m, tX + 5, tY + 5)
 }
 
-; Formatted File Date & Time
 FileDT(opt) {
-  global imgFile
-  return FormatTime(FileGetTime(imgFile, opt), "d MMMM yyyy ddd HH:mm:ss")
+	global imgFile
+	try {
+		return FormatTime(FileGetTime(imgFile, opt), "d MMMM yyyy ddd HH:mm:ss")
+	} catch {
+		return "N/A"
+	}
 }
 
-; File Properties dialog box
 FileProperties() {
-  global imgFile
-  Run('Properties "' imgFile '"')
-  WinWait("ahk_class #32770")
-  WinSetAlwaysOnTop(, "A")
+	global imgFile, isClipboardImage
+
+	if isClipboardImage {
+		MsgBox(lang["File_clipboard_image"], , "Icon! 4096")
+		return
+	}
+
+	Run('Properties "' imgFile '"')
+	WinWait("ahk_class #32770")
+	WinSetAlwaysOnTop(, "A")
 }
 
-; Converts a numeric value into a string that represents
-; the number in bytes, kilobytes, megabytes, or gigabytes,
-; depending on the size.
 FormatByteSize(int, flags := 0x2) {
-  size := VarSetStrCapacity(&buf, 0x0104)
-  DllCall("shlwapi\StrFormatByteSizeEx", "int64", int, "int", flags, "str", buf, "uint", size)
-  return buf
+	size := VarSetStrCapacity(&buf, 0x0104)
+	DllCall("shlwapi\StrFormatByteSizeEx", "int64", int, "int", flags, "str", buf, "uint", size)
+	return buf
 }
 
-; Function to move the window by dragging it
 MoveWindow() {
-  CoordMode("Mouse")  ; Switch to screen/absolute coordinates.
-  MouseGetPos &msX, &msY, &win ; Get the initial mouse position and window handle.
-  if !WinGetMinMax(win)  ; Only if the window isn't maximized
-    SetTimer(WatchMouse, 10) ; Track the mouse as the user drags it.
+	CoordMode("Mouse")
+	MouseGetPos &msX, &msY, &win
+	if !WinGetMinMax(win)
+		SetTimer(WatchMouse, 10)
 
-  WatchMouse() {
-    if !GetKeyState("LButton", "P") {  ; Mouse left button has been released, so drag is complete.
-      SetTimer(, 0) ; Stop tracking the mouse.
-      ShowImage() ; Show the image
-      return
-    }
-    ; Otherwise, reposition the window to match the change in mouse coordinates
-    ; caused by the user having dragged the mouse:
-    CoordMode("Mouse")
-    MouseGetPos(&mX, &mY)
-    WinGetPos(&wX, &wY, , , win)
-    SetWinDelay(-1)   ; Makes the below move faster/smoother.
-    WinMove(wX + mX - msX, wY + mY - msY, , , win)
-    msX := mX  ; Update for the next timer-call to this subroutine.
-    msY := mY
-  }
+	WatchMouse() {
+		if !GetKeyState("LButton", "P") {
+			SetTimer(, 0)
+			ShowImage()
+			return
+		}
+		CoordMode("Mouse")
+		MouseGetPos(&mX, &mY)
+		WinGetPos(&wX, &wY, , , win)
+		SetWinDelay(-1)
+		WinMove(wX + mX - msX, wY + mY - msY, , , win)
+		msX := mX
+		msY := mY
+	}
 }
 
-; Function to handle file drag-and-drop events
 Gui_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
-  global dropFile
-  dropFile := FileArray[1] ; Get the dropped file
-  OpenFile() ; Open the dropped file
+	global dropFile
+	dropFile := FileArray[1]
+	OpenFile()
 }
 
-; Keyboard shortcuts
+PasteImageFromClipboard() {
+	global bitmap, originalWidth, originalHeight, imgWidth, imgHeight
+	global zoomFactor, isClipboardImage, imgFile, lastIndex
+
+	pBitmap := Gdip_CreateBitmapFromClipboard()
+
+	if !IsValidBitmap(pBitmap) {
+		MsgBox(lang["File_no_clipboard_image"], , "Icon! 4096")
+		return
+	}
+
+	SafeDisposeBitmap(&bitmap)
+	bitmap := pBitmap
+	isClipboardImage := true
+	imgFile := lang["FileInfo_clipboard"]
+	lastIndex := 0
+
+	originalWidth := Gdip_GetImageWidth(bitmap)
+	originalHeight := Gdip_GetImageHeight(bitmap)
+
+	if (originalWidth > A_ScreenWidth || originalHeight > A_ScreenHeight) {
+		ZoomImage(2)
+	}
+	else {
+		imgWidth := originalWidth
+		imgHeight := originalHeight
+		zoomFactor := 1
+		ShowGui()
+	}
+}
+
 Shortcuts(*) {
-  ; Create arrays for keyboard and mouse shortcuts
-  kbShortcuts := [
-    lang["Shortcuts_keyboard"],
-    "-------------------",
-    lang["Shortcuts_kb_down"],
-    lang["Shortcuts_kb_home"],
-    lang["Shortcuts_kb_back"],
-    lang["Shortcuts_kb_left"],
-    lang["Shortcuts_kb_forward"],
-    lang["Shortcuts_kb_right"],
-    lang["Shortcuts_kb_end"],
-    lang["Shortcuts_kb_plus"],
-    lang["Shortcuts_kb_minus"],
-    lang["Shortcuts_kb_zero"],
-    lang["Shortcuts_kb_one"],
-    lang["Shortcuts_kb_f1"],
-    lang["Shortcuts_kb_f2"],
-    lang["Shortcuts_kb_f3"],
-    lang["Shortcuts_kb_f5"],
-    lang["Shortcuts_kb_ctrl_o"],
-    lang["Shortcuts_kb_ctrl_c"],
-    lang["Shortcuts_kb_esc"],
-    lang["Shortcuts_kb_alt_f4"]
-  ]
+	kbShortcuts := [
+		lang["Shortcuts_keyboard"],
+		"-------------------",
+		lang["Shortcuts_kb_down"],
+		lang["Shortcuts_kb_home"],
+		lang["Shortcuts_kb_back"],
+		lang["Shortcuts_kb_left"],
+		lang["Shortcuts_kb_forward"],
+		lang["Shortcuts_kb_right"],
+		lang["Shortcuts_kb_end"],
+		lang["Shortcuts_kb_delete"],
+		lang["Shortcuts_kb_plus"],
+		lang["Shortcuts_kb_minus"],
+		lang["Shortcuts_kb_zero"],
+		lang["Shortcuts_kb_one"],
+		lang["Shortcuts_kb_f1"],
+		lang["Shortcuts_kb_f2"],
+		lang["Shortcuts_kb_f3"],
+		lang["Shortcuts_kb_f5"],
+		lang["Shortcuts_kb_ctrl_o"],
+		lang["Shortcuts_kb_ctrl_c"],
+		lang["Shortcuts_kb_ctrl_v"],
+		lang["Shortcuts_kb_esc"],
+		lang["Shortcuts_kb_alt_f4"]
+	]
 
-  mouseShortcuts := [
-    lang["Shortcuts_mouse"],
-    "------",
-    lang["Shortcuts_mouse_right"],
-    lang["Shortcuts_mouse_wheel_up"],
-    lang["Shortcuts_mouse_wheel_down"],
-    lang["Shortcuts_mouse_4"],
-    lang["Shortcuts_mouse_5"],
-    lang["Shortcuts_mouse_left_dbl"],
-    lang["Shortcuts_mouse_middle_dbl"]
-  ]
+	mouseShortcuts := [
+		lang["Shortcuts_mouse"],
+		"------",
+		lang["Shortcuts_mouse_right"],
+		lang["Shortcuts_mouse_wheel_up"],
+		lang["Shortcuts_mouse_wheel_down"],
+		lang["Shortcuts_mouse_4"],
+		lang["Shortcuts_mouse_5"],
+		lang["Shortcuts_mouse_left_dbl"],
+		lang["Shortcuts_mouse_middle_dbl"]
+	]
 
-  ; Join arrays with newlines
-  for shortcut in kbShortcuts
-    txt .= shortcut "`n"
-  txt .= "`n"
-  for shortcut in mouseShortcuts
-    txt .= shortcut "`n"
+	for shortcut in kbShortcuts
+		txt .= shortcut "`n"
+	txt .= "`n"
+	for shortcut in mouseShortcuts
+		txt .= shortcut "`n"
 
-  MsgBox(txt, lang["Shortcuts_title"], "Owner" g.Hwnd)
+	MsgBox(txt, lang["Shortcuts_title"], "Owner" g.Hwnd)
 }
 
-; Copy the image to the clipboard at its original size
 CopyImageToClipboard() {
-  global bitmap
-  if !IsSet(bitmap) || !bitmap {
-    MsgBox(lang["File_nofile"], , "Icon! 4096")
-    return
-  }
-  ; Copy the image to the clipboard
-  Gdip_SetBitmapToClipboard(bitmap)
+	global bitmap
+	if !IsSet(bitmap) || !bitmap {
+		MsgBox(lang["File_nofile"], , "Icon! 4096")
+		return
+	}
+	Gdip_SetBitmapToClipboard(bitmap)
 }
 
-; About dialog
 About(*) {
-  txt := A_ScriptName "`n"
-  txt .= "©2025`n"
-  txt .= "Mesut Akcan`n"
-  txt .= "makcan@gmail.com`n"
-  txt .= "`n"
-  txt .= "mesutakcan.blogspot.com`n"
-  txt .= "github.com/mesutakcan`n"
-  txt .= "youtube.com/mesutakcan"
-  MsgBox(txt, lang["About_about"], "Owner" g.Hwnd)
+	txt := A_ScriptName "`n"
+	txt .= "©2026`n"
+	txt .= "Mesut Akcan`n"
+	txt .= "makcan@gmail.com`n"
+	txt .= "`n"
+	txt .= "mesutakcan.blogspot.com`n"
+	txt .= "github.com/mesutakcan`n"
+	txt .= "youtube.com/mesutakcan"
+	MsgBox(txt, lang["About_about"], "Owner" g.Hwnd)
 }
