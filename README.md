@@ -37,12 +37,17 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 
 ## Requirements
 
-- Windows x64
-- [AutoHotkey v2](https://www.autohotkey.com/) (for running source code)
+- Windows (32-bit or 64-bit)
+- [AutoHotkey v2](https://www.autohotkey.com/) (only required if running the source code directly)
 
 ## Installation
 
-Download [AS Image Viewer.exe](https://github.com/mesutakcan/AS-Image-Viewer/blob/main/src/AS%20Image%20Viewer.exe) file and [lang](https://github.com/mesutakcan/AS-Image-Viewer/tree/main/src/lang) folder to your Windows PC and run it. No installation required.
+1. Go to the [Releases](https://github.com/mesutakcan/AS-Image-Viewer/releases) page.
+2. Download the appropriate executable file for your system:
+   - **`AS-Image-Viewer-x64.exe`** (for 64-bit Windows)
+   - **`AS-Image-Viewer-x32.exe`** (for 32-bit Windows)
+3. Download the [lang](https://github.com/mesutakcan/AS-Image-Viewer/tree/main/src/lang) folder and place it in the same directory as the executable.
+4. Run the executable. No installation is required.
 
 ## Language Support
 
@@ -84,7 +89,7 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
 ## Opening Image File
 
 - **Command Line**: Launch the application with an image file path as a parameter to open it directly.
-- **Drag and Drop to Exe File**: Drag an image file onto the AS Image Viewer exe file to open it immediately.
+- **Drag and Drop to Exe File**: Drag an image file onto the executable file to open it immediately.
 
 ### Opening File While Running
 
