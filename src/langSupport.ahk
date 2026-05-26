@@ -453,14 +453,14 @@ LoadLanguage() {
 	langDir := A_ScriptDir "\lang\"
 
 	if !FileExist(langDir) {
-		MsgBox("Language directory not found: " langDir)
+		MsgBox("Language directory not found:`n" langDir "`n`nThe application cannot continue. Please make sure the 'lang' folder is located in the same directory as the executable.", A_ScriptName, "Iconx 4096")
 		ExitApp()
 	}
 
 	; Load English first as fallback
 	englishFile := langDir "en.ini"
 	if !FileExist(englishFile) {
-		MsgBox("English language file (en.ini) not found in: " langDir "`nThis file is required as fallback.")
+		MsgBox("English language file (en.ini) not found in:`n" langDir "`n`nThis file is required as a fallback translation. The application cannot continue.", A_ScriptName, "Iconx 4096")
 		ExitApp()
 	}
 	LoadLangFile(englishFile)

@@ -14,7 +14,6 @@ youtube.com/mesutakcan
 ;@Ahk2Exe-SetMainIcon app_icon.ico
 ;@Ahk2Exe-ExeName AS Image Viewer.exe
 ;@Ahk2Exe-SetName AS Image Viewer
-;@Ahk2Exe-Bin C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe
 ;@Ahk2Exe-SetDescription A simple and fast image viewer
 ;@Ahk2Exe-SetFileVersion 1.7
 ;@Ahk2Exe-SetCompanyName akcanSoft
@@ -29,6 +28,7 @@ youtube.com/mesutakcan
 
 A_ScriptName := "AS Image Viewer v1.7"
 
+g := { Hwnd: 0 }
 LoadLanguage()
 
 if !pToken := Gdip_Startup() {
