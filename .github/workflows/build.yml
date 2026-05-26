@@ -1,11 +1,10 @@
 name: Build and Release
 
-# Tetikleyicileri güncelliyoruz
 on:
   push:
     tags:
       - "v*"
-  workflow_dispatch: # GitHub Actions sayfasından manuel olarak başlatabilmenizi sağlar
+  workflow_dispatch:
 
 jobs:
   build:
@@ -57,13 +56,21 @@ jobs:
           if (!(Test-Path $ahk_file)) { throw "Kaynak AHK dosyası bulunamadı: $ahk_file" }
           if (!(Test-Path $icon_file)) { throw "İkon dosyası bulunamadı: $icon_file" }
 
+          $target64 = Join-Path $distDir $exeName64
+          $target32 = Join-Path $distDir $exeName32
+
           # x64 Derleme
-          & $compiler /in $ahk_file /base $ahk64 /icon $icon_file /out (Join-Path $distDir $exeName64)
-          if ($LASTEXITCODE -ne 0) { throw "x64 derleme hatası!" }
+          Write-Host "x64 derleniyor..."
+          & $compiler /in $ahk_file /base $ahk64 /icon $icon_file /out $target64
+          
+          # Çıkış kodu yerine dosyanın fiziksel olarak üretilip üretilmediğine bakıyoruz
+          if (!(Test-Path $target64)) { throw "x64 derleme başarısız! Çıktı dosyası bulunamadı." }
 
           # x32 Derleme
-          & $compiler /in $ahk_file /base $ahk32 /icon $icon_file /out (Join-Path $distDir $exeName32)
-          if ($LASTEXITCODE -ne 0) { throw "x32 derleme hatası!" }
+          Write-Host "x32 derleniyor..."
+          & $compiler /in $ahk_file /base $ahk32 /icon $icon_file /out $target32
+          
+          if (!(Test-Path $target32)) { throw "x32 derleme başarısız! Çıktı dosyası bulunamadı." }
 
           Write-Host "=== dist klasörü içeriği ==="
           Get-ChildItem $distDir
@@ -73,8 +80,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.exe
-          tag_name: ${{ github.ref_name }} # Tetiklenen mevcut tag'i hedef alır
-          overwrite: true                  # Eğer aynı isimde exe varsa üzerine yazar
+          tag_name: ${{ github.ref_name }}
+          overwrite: true
           body: "Derleme dosyaları başarıyla güncellendi."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
