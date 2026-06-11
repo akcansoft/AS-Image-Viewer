@@ -1,21 +1,25 @@
 /*
 ======================
 AS Image Viewer
-v1.7
-26/05/2026
+v1.7.1
+11/06/2026
 ======================
 Mesut Akcan
 makcan@gmail.com
 mesutakcan.blogspot.com
 github.com/mesutakcan
 youtube.com/mesutakcan
+=======================
+TODO:
+=======================
+- Add built-in file association setup (register as default app for image formats via Registry)
 */
 
 ;@Ahk2Exe-SetMainIcon app_icon.ico
 ;@Ahk2Exe-ExeName AS Image Viewer.exe
 ;@Ahk2Exe-SetName AS Image Viewer
 ;@Ahk2Exe-SetDescription A simple and fast image viewer
-;@Ahk2Exe-SetFileVersion 1.7
+;@Ahk2Exe-SetFileVersion 1.7.1
 ;@Ahk2Exe-SetCompanyName akcanSoft
 ;@Ahk2Exe-SetCopyright ©2026 Mesut Akcan
 
@@ -26,7 +30,7 @@ youtube.com/mesutakcan
 #Include "gdip_all.ahk"
 #Include "langSupport.ahk"
 
-A_ScriptName := "AS Image Viewer v1.7"
+A_ScriptName := "AS Image Viewer v1.7.1"
 
 g := { Hwnd: 0 }
 LoadLanguage()
@@ -507,6 +511,14 @@ ZoomImage(zoomMode) {
 	global
 	static prevZoomFactor := 1
 
+	; Zoom öncesi pencere merkez noktasını kaydet (pencere görünürse)
+	local anchorCX := "", anchorCY := ""
+	if DllCall("IsWindowVisible", "Ptr", g.Hwnd) {
+		WinGetPos(&_wx, &_wy, &_ww, &_wh, g)
+		anchorCX := _wx + _ww / 2
+		anchorCY := _wy + _wh / 2
+	}
+
 	switch zoomMode {
 		case 0: zoomFactor := 1
 		case 1: zoomFactor += 0.1
@@ -535,7 +547,7 @@ ZoomImage(zoomMode) {
 
 	imgWidth := Round(originalWidth * zoomFactor)
 	imgHeight := Round(originalHeight * zoomFactor)
-	ShowGui()
+	ShowGui(anchorCX, anchorCY)
 }
 
 toggleAOT(*) {
@@ -559,7 +571,7 @@ toggleCenterImage(*) {
 		ShowGui()
 }
 
-ShowGui() {
+ShowGui(anchorCX := "", anchorCY := "") {
 	global imgWidth, imgHeight, g, centerImage, windowX, windowY, windowPositionLoaded
 	local sizeTxt := "w" imgWidth " h" imgHeight
 
@@ -569,7 +581,10 @@ ShowGui() {
 		return
 	}
 
-	if DllCall("IsWindowVisible", "Ptr", g.Hwnd) {
+	if (anchorCX != "" && anchorCY != "") {
+		x := Round(anchorCX - imgWidth / 2)
+		y := Round(anchorCY - imgHeight / 2)
+	} else if DllCall("IsWindowVisible", "Ptr", g.Hwnd) {
 		WinGetPos(&x, &y, , , g)
 	} else {
 		x := windowPositionLoaded ? windowX : 0
