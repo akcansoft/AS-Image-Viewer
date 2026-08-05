@@ -1,8 +1,11 @@
 /*
 ======================
 AS Image Viewer
-v1.7.1
-11/06/2026
+v1.8
+05/08/2026
+======================
+AS Image Viewer is a minimalist image viewer application that uses GDI+ for rendering.
+It supports multiple image formats and allows easy navigation and management through a simple GUI interface.
 ======================
 Mesut Akcan
 makcan@gmail.com
@@ -19,7 +22,7 @@ TODO:
 ;@Ahk2Exe-ExeName AS Image Viewer.exe
 ;@Ahk2Exe-SetName AS Image Viewer
 ;@Ahk2Exe-SetDescription A simple and fast image viewer
-;@Ahk2Exe-SetFileVersion 1.7.1
+;@Ahk2Exe-SetFileVersion 1.8
 ;@Ahk2Exe-SetCompanyName akcanSoft
 ;@Ahk2Exe-SetCopyright ©2026 Mesut Akcan
 
@@ -30,10 +33,12 @@ TODO:
 #Include "gdip_all.ahk"
 #Include "langSupport.ahk"
 
-A_ScriptName := "AS Image Viewer v1.7.1"
+A_ScriptName := "AS Image Viewer v1.8"
 
 g := { Hwnd: 0 }
-LoadLanguage()
+settingsFile := A_ScriptDir "\settings.ini"
+savedLangCode := IniRead(settingsFile, "Settings", "Language", "")
+LoadLanguage(savedLangCode)
 
 if !pToken := Gdip_Startup() {
 	MsgBox(lang["File_load_failed"], , "Icon! 4096")
@@ -49,7 +54,6 @@ currentFolder := ""
 lastIndex := 0
 imgNo := 0
 isClipboardImage := false
-settingsFile := A_ScriptDir "\settings.ini"
 centerImage := true
 windowX := 0
 windowY := 0
@@ -62,6 +66,7 @@ g.OnEvent("DropFiles", Gui_DropFiles)
 
 CreateMenu()
 LoadSettings()
+ApplyMenuCheckStates()
 OpenFile()
 
 #HotIf WinActive(g.Hwnd)
@@ -113,11 +118,18 @@ HandleMouseClick() {
 }
 
 CreateMenu() {
-	global rcMenu, mnuTxt
+	global rcMenu, mnuTxt, langMenu, langCodeByName
 
 	imageres := A_WinDir "\system32\imageres.dll"
 	shell32 := A_WinDir "\system32\shell32.dll"
 	rcMenu := Menu()
+
+	langMenu := Menu()
+	langCodeByName := Map()
+	for code, name in GetAvailableLanguages() {
+		langMenu.Add(name, LanguageMenuHandler)
+		langCodeByName[name] := code
+	}
 
 	mnuTxt := {
 		open: lang["Menu_open"] . "`tCtrl+O",
@@ -144,7 +156,38 @@ CreateMenu() {
 		about: lang["Menu_about"]
 	}
 
-	menuItems := [{ text: mnuTxt.open, iconFile: imageres, iconNo: 195 }, { text: mnuTxt.exit, iconFile: imageres, iconNo: 94 }, { separator: true }, { text: mnuTxt.first }, { text: mnuTxt.prev }, { text: mnuTxt.next, iconFile: shell32, iconNo: 298 }, { text: mnuTxt.last }, { separator: true }, { text: mnuTxt.delete, iconFile: shell32, iconNo: 63 }, { separator: true }, { text: mnuTxt.zoomin }, { text: mnuTxt.zoomout }, { text: mnuTxt.fit, iconFile: shell32, iconNo: 16 }, { text: mnuTxt.osize }, { separator: true }, { text: mnuTxt.refresh, iconFile: imageres, iconNo: 230 }, { text: mnuTxt.copy, iconFile: shell32, iconNo: 135 }, { text: mnuTxt.paste, iconFile: shell32, iconNo: 261 }, { separator: true }, { text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 }, { text: mnuTxt.fileprop, iconFile: shell32, iconNo: 283 }, { text: mnuTxt.fileinfolder, iconFile: shell32, iconNo: 267 }, { separator: true }, { text: mnuTxt.aot, check: true }, { text: mnuTxt.border }, { text: mnuTxt.center, check: true }, { separator: true }, { text: mnuTxt.shortcuts, iconFile: shell32, iconNo: 30 }, { text: mnuTxt.about, iconFile: shell32, iconNo: 155 }
+	menuItems := [
+		{ text: mnuTxt.open, iconFile: imageres, iconNo: 195 },
+		{ text: mnuTxt.exit, iconFile: imageres, iconNo: 94 },
+		{ separator: true },
+		{ text: "Language", submenu: langMenu, iconFile: shell32, iconNo: 14 },
+		{ separator: true },
+		{ text: mnuTxt.first },
+		{ text: mnuTxt.prev },
+		{ text: mnuTxt.next, iconFile: shell32, iconNo: 298 },
+		{ text: mnuTxt.last },
+		{ separator: true },
+		{ text: mnuTxt.delete, iconFile: shell32, iconNo: 63 },
+		{ separator: true },
+		{ text: mnuTxt.zoomin },
+		{ text: mnuTxt.zoomout },
+		{ text: mnuTxt.fit, iconFile: shell32, iconNo: 16 },
+		{ text: mnuTxt.osize },
+		{ separator: true },
+		{ text: mnuTxt.refresh, iconFile: imageres, iconNo: 230 },
+		{ text: mnuTxt.copy, iconFile: shell32, iconNo: 135 },
+		{ text: mnuTxt.paste, iconFile: shell32, iconNo: 261 },
+		{ separator: true },
+		{ text: mnuTxt.fileinfo, iconFile: shell32, iconNo: 222 },
+		{ text: mnuTxt.fileprop, iconFile: shell32, iconNo: 283 },
+		{ text: mnuTxt.fileinfolder, iconFile: shell32, iconNo: 267 },
+		{ separator: true },
+		{ text: mnuTxt.aot, check: true },
+		{ text: mnuTxt.border },
+		{ text: mnuTxt.center, check: true },
+		{ separator: true },
+		{ text: mnuTxt.shortcuts, iconFile: shell32, iconNo: 30 },
+		{ text: mnuTxt.about, iconFile: shell32, iconNo: 155 }
 	]
 
 	for index, item in menuItems {
@@ -152,13 +195,53 @@ CreateMenu() {
 			rcMenu.Add()
 			continue
 		}
-		rcMenu.Add(item.text, menuHandler)
+		if (item.HasOwnProp("submenu")) {
+			rcMenu.Add(item.text, item.submenu)
+		} else {
+			rcMenu.Add(item.text, menuHandler)
+		}
 		if (item.HasOwnProp("iconFile") && item.HasOwnProp("iconNo")) {
 			rcMenu.SetIcon(item.text, item.iconFile, item.iconNo)
 		}
 		if (item.HasOwnProp("check") && item.check) {
 			rcMenu.Check(item.text)
 		}
+	}
+}
+
+; Dil alt menüsünden bir öğe seçildiğinde çağrılır
+LanguageMenuHandler(itemName, itemPos, menuObj) {
+	global langCodeByName, currentLangCode
+	if !langCodeByName.Has(itemName)
+		return
+	selectedCode := langCodeByName[itemName]
+	if (selectedCode = currentLangCode)
+		return
+	SetLanguage(selectedCode)
+}
+
+; Uygulama dilini değiştirir, tercihi kaydeder ve menüyü yeniden oluşturur
+SetLanguage(code) {
+	global settingsFile
+	LoadLanguage(code)
+	IniWrite(code, settingsFile, "Settings", "Language")
+	CreateMenu()
+	ApplyMenuCheckStates()
+}
+
+; rcMenu'deki işaret (check) durumlarını mevcut pencere/ayar durumuna göre uygular
+ApplyMenuCheckStates() {
+	global rcMenu, mnuTxt, g, centerImage, currentLangCode, langMenu, langCodeByName
+
+	(WinGetExStyle(g) & 0x8) ? rcMenu.Check(mnuTxt.aot) : rcMenu.Uncheck(mnuTxt.aot)
+	(WinGetStyle(g) & 0x800000) ? rcMenu.Check(mnuTxt.border) : rcMenu.Uncheck(mnuTxt.border)
+	centerImage ? rcMenu.Check(mnuTxt.center) : rcMenu.Uncheck(mnuTxt.center)
+
+	for name, code in langCodeByName {
+		if (code = currentLangCode)
+			langMenu.Check(name)
+		else
+			langMenu.Uncheck(name)
 	}
 }
 
@@ -191,26 +274,20 @@ menuHandler(item, *) {
 }
 
 LoadSettings() {
-	global settingsFile, rcMenu, mnuTxt, g, currentFolder, centerImage, windowX, windowY, windowPositionLoaded
+	global settingsFile, g, currentFolder, centerImage, windowX, windowY, windowPositionLoaded
 
 	; Always on Top setting
 	aotSetting := IniRead(settingsFile, "Settings", "AlwaysOnTop", "1")
-	if (aotSetting = "0") {
+	if (aotSetting = "0")
 		WinSetAlwaysOnTop(0, g)
-		rcMenu.Uncheck(mnuTxt.aot)
-	}
 
 	; Window Border setting
 	borderSetting := IniRead(settingsFile, "Settings", "WindowBorder", "0")
-	if (borderSetting = "1") {
+	if (borderSetting = "1")
 		WinSetStyle("+0x800000", g)
-		rcMenu.Check(mnuTxt.border)
-	}
 
 	; Center image setting
 	centerImage := IniRead(settingsFile, "Settings", "CenterImage", "1") != "0"
-	if !centerImage
-		rcMenu.Uncheck(mnuTxt.center)
 
 	; Last window position
 	savedWindowX := IniRead(settingsFile, "Settings", "WindowX", "")

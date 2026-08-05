@@ -1,3 +1,5 @@
+; https://github.com/buliasz/AHKv2-Gdip
+
 #Requires AutoHotKey v2.0-beta.3
 ; v1.62
 ;

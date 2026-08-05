@@ -1,9 +1,9 @@
-# AS Image Viewer v1.7
+# AS Image Viewer v1.8
 
 [![AutoHotkey](https://img.shields.io/badge/Language-AutoHotkey_v2-green.svg)](https://www.autohotkey.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.7-brightgreen.svg)](https://github.com/mesutakcan/AS-Image-Viewer/releases) 
+[![Version](https://img.shields.io/badge/Version-1.8-brightgreen.svg)](https://github.com/mesutakcan/AS-Image-Viewer/releases) 
 
 ![GitHub stars](https://img.shields.io/github/stars/mesutakcan/AS-Image-Viewer?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/mesutakcan/AS-Image-Viewer?style=social)
@@ -31,6 +31,7 @@ AS Image Viewer is a minimalist image viewer application that uses GDI+ for rend
 - Window border toggle option
 - Save last window position, folder and settings
 - Language support
+- Automatic language detection based on the system language
 - Delete current image
 - Copy image to clipboard
 - Paste image from clipboard
@@ -172,6 +173,10 @@ This application uses the library file [Gdip_All.ahk](https://github.com/buliasz
   - Added save settings (window position, center image, etc.)
   - Added icons to right-click menu
   - Improved memory handling when loading files
+- v1.8: 05/08/2026
+  - Added Language submenu to right-click menu (users can switch language at runtime)
+  - Language preference is saved and restored on next launch
+  - Automatic language detection based on the system language
 
 ## TODO
 - Rotate image
@@ -194,3 +199,7 @@ Contributions are welcome! If you'd like to add features, fix bugs, or improve t
 **Blog**: [mesutakcan.blogspot.com](http://mesutakcan.blogspot.com)\
 **GitHub**: [mesutakcan](http://github.com/mesutakcan)\
 **YouTube**: [Mesut Akcan](http://youtube.com/mesutakcan)
+
+
+
+
